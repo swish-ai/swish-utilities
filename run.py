@@ -1,11 +1,92 @@
 #!/usr/bin/python
 import sys
 import os
+import json
 import getopt
 import threading
 
 from datetime import datetime, timedelta
+from src.extractor_resource import Extractor
 from types import SimpleNamespace
+from src.settings import Settings
+from pandas import read_csv, read_excel, DataFrame
+from src.cleaner import TextCleaner, CustomUserFile
+from time import time
+
+
+# ENUMS
+MASK: int = 1
+ANONYMIZE: int = 2
+NONE_ACTION: int = 3
+
+
+class File:
+    def __init__(self, filename, ext, selected, listbox_index, view_name, is_cli = False):
+        self.view_name = view_name
+        self.listbox_index = listbox_index
+        self.filename = filename
+        self.ext = ext
+        self.selected = selected
+        self.cleaner = None
+
+        # Extras
+        try:
+            self.non_extension_part = os.path.split(filename)[-1].split('.')[0]
+        except Exception as e:
+            print(e.__str__())
+            self.non_extension_part = 'NewFile'
+            print('failed to extract non extension part from file name')
+
+        # ------ Pandas DataFrame ------ #
+        self.data: DataFrame = None
+        self.all_data: DataFrame = None
+        self.preview_data: DataFrame = None
+
+        self.transform_method_button: dict = {}
+
+    def save_data_to_file(self, output_data, destination_folder):
+        try:
+            output_filename = os.path.join(destination_folder,
+                                           self.non_extension_part + '_processed.' + self.ext)
+
+            if self.ext == 'xlsx':
+                output_data.to_excel(r'' + output_filename,
+                                     encoding='utf-8-sig')
+            elif self.ext == 'csv':
+                try:
+                    output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='utf-8-sig')
+                except Exception:
+                    try:
+                        output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='utf-8')
+                    except Exception:
+                        output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='latin-1')
+
+            elif self.ext == 'json':
+                try:
+                    with open(output_filename, 'w', encoding='utf-8') as file:
+                        output_data.to_json(file, force_ascii=False, orient='records')
+                except Exception:
+                    with open(output_filename, 'w', encoding='utf-8-sig') as file:
+                        output_data.to_json(file, force_ascii=False, orient='records')
+
+        except Exception as e:
+            message = f'Error while saving file to: {output_filename}. {e.__str__()}'
+            print(message)
+            raise Exception(message)
+
+    def set_column_function(self, column=None, method=None):
+
+        if not method:
+            method = self.transform_method_button[column]
+        if not isinstance(method, int):
+            method = method.get()
+
+        self.change_column_method(column, method)
+
+        return method
+
+    def change_column_method(self, column, method):
+        self.transform_method_button[column] = method
 
 
 def main(argv):
@@ -13,23 +94,28 @@ def main(argv):
         help_message = '--url URL [--mask] [--extract] --output_dir OUTPUT_DIR --start_date START_DATE --end_date END_DATE ' \
                        '--username USERNAME --password PASSWORD --batch_size BATCH_SIZE --interval INTERVAL' \
                        ' --file_limit FILE_LIMIT [--stop_limit STOP_LIMIT] [--compress] ' \
-                       '[--parallel PARALLELISM_LEVEL]'
+                       '[--parallel PARALLELISM_LEVEL]' \
+                       '--input_dir INPUT_DIR --mapping_path MAPPING_PATH ' \
+                       '--custom_token_dir CUSTOM_TOKEN_DIR [--important_token_path IMPORTANT_TOKEN_PATH]'
 
-
+        app_settings = Settings('base')
         params = params_initialize()
 
-        message = f'Running DC_Exporter..'
+        message = f'Running DC_Multi_Utility..'
+        app_settings.logger.info(message)
         print(message)
 
         try:
-            opts, args = getopt.getopt(argv, "hm:e:u:s:o:b:r:n:w:i:t:f:p:",
+            opts, args = getopt.getopt(argv, "hm:e:u:s:o:b:r:n:w:i:t:f:p:a:c:d:g",
                                        ["h",
                                         "mask", "extract",
                                         "url=",
                                         "start_date=", "end_date=", "output_dir=", "batch_size=",
                                         "compress=",
                                         "username=", "password=", "interval=","stop_limit=",
-                                        "file_limit=", "parallel="])
+                                        "file_limit=", "parallel=",
+                                        "input_dir=", "mapping_path=", "custom_token_dir=",
+                                        "important_token_file="])
         except getopt.GetoptError as e:
             print(e)
             print('Right usage: ',help_message)
@@ -55,6 +141,7 @@ def main(argv):
                     params.extracting.batch_size = batch_size
                 elif opt in ("--output_dir"):
                     params.extracting.output_dir = arg
+                    params.masking.output_dir = arg
                 elif opt in ("--username"):
                     params.extracting.username = arg
                 elif opt in ("--password"):
@@ -72,6 +159,16 @@ def main(argv):
                 elif opt in ("--parallel"):
                     params.extracting.parallelism_level = int(arg)
 
+                # Masking Arguments
+                elif opt in ("--input_dir"):
+                    params.masking.input_dir = arg
+                elif opt in ("--mapping_path"):
+                    params.masking.mapping_path = arg
+                elif opt in ("--custom_token_dir"):
+                    params.masking.custom_token_dir = arg
+                elif opt in ("--important_token_file"):
+                    params.masking.important_token_file = arg
+
             except Exception as error:
                 message = f'Error while parsing argument {opt}; {error}'
                 print(message)
@@ -80,21 +177,76 @@ def main(argv):
 
 
 
-        cli_script_execute(params)
+        cli_script_execute(params, app_settings)
 
     except Exception as error:
+        app_settings.logger.exception(error)
         print(error)
         sys.exit(2)
 
 
-def cli_script_execute(params):
+def cli_script_execute(params, app_settings):
 
     # Assert mandatory files/dirs
     try:
 
-        if params.extracting.enabled:
-            for key in params.extracting.__dict__:
-                assert params.extracting.__dict__[key] is not None, f'{key} argument is missing'
+
+        validate_params(params.extracting, 'extracting')
+
+        validate_params(params.masking, 'masking')
+
+        if params.extracting.enabled and params.masking.enabled:
+            params.masking.input_dir = params.extracting.output_dir
+
+        try:
+            if params.extracting.enabled:
+                extracting_execute(params.extracting, app_settings)
+        except Exception as error:
+            raise Exception(f'Extracting error, {error}')
+
+        try:
+            if params.masking.enabled:
+                masking_execute(params.masking, app_settings)
+        except Exception as error:
+            raise Exception(f'Masking error, {error}')
+
+
+    except Exception as error:
+        message = f'Execution Error: {error}'
+        print(message)
+        app_settings.logger.exception(message)
+
+    message = f'Script has FINISHED'
+    print(message)
+
+
+def validate_params(params, type):
+    """
+
+    :param params:
+    :param type:
+    :return:
+    """
+
+    if params.enabled:
+        for key in params.__dict__:
+            assert params.__dict__[key] is not None, f'{key} argument is missing'
+
+        if not params.__dict__.__contains__('output_dir'):
+            dir = f'{type}_output'
+            params.output_dir = os.path.join(os.getcwd(), dir)
+            if not os.path.isdir(params.output_dir):
+                os.mkdir(dir)
+
+        message = f'{type} output directory is "{params.output_dir}'
+        print(message)
+
+def extracting_execute(params, app_settings):
+
+    # Assert mandatory files/dirs
+    try:
+        for key in params.__dict__:
+            assert params.__dict__[key] is not None, f'{key} argument is missing'
 
         if not params.__dict__.__contains__('output_dir'):
             dir = 'output'
@@ -103,17 +255,226 @@ def cli_script_execute(params):
                 os.mkdir(dir)
 
         message = f'Output directory is "{params.output_dir}'
+        app_settings.logger.info(message)
         print(message)
 
         results = []
-        pass
+        if params.parallelism_level > 1 :
+            extracting_multithreading_execution(params, app_settings)
+        else:
+            api_resource= Extractor(params.start_date, params.end_date, 0, app_settings)
+            api_resource.api_extract(params)
+
+            message = f'Total Added: {api_resource.total_added}, Total Failed Approximated: {api_resource.total_failed}'
+            app_settings.logger.info(message)
+            print(message)
 
     except Exception as error:
         message = f'Execution Error: {error}'
         print(message)
+        app_settings.logger.error(message)
 
-    message = f'Script has FINISHED'
+    message = f'Extracting has FINISHED'
+    app_settings.logger.info(message)
     print(message)
+
+def extracting_multithreading_execution(params, app_settings):
+
+    thread_list = list()
+    total_period = params.end_date - params.start_date
+    single_period = total_period.total_seconds() / params.parallelism_level
+    batch_start_date = params.start_date
+    batch_end_date = batch_start_date + timedelta(seconds=single_period)
+
+    resources = [None] * params.parallelism_level
+    for thread_id in range(params.parallelism_level):
+        thread_params  = params
+        thread_params.start_date = batch_start_date
+        thread_params.end_date = batch_end_date
+        thread_params.thread_id = thread_id
+
+        resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)))
+
+        batch_start_date = batch_start_date + timedelta(seconds=single_period)
+        batch_end_date = batch_end_date + timedelta(seconds=single_period)
+
+    for thread_id in range(params.parallelism_level):
+        #
+        thread_params = params
+        thread = threading.Thread(target=resources[thread_id].api_extract, args=(thread_params,))
+
+        thread.start()
+        thread_list.append(thread)
+
+        batch_start_date = batch_start_date + timedelta(seconds=single_period)
+        batch_end_date = batch_end_date + timedelta(seconds=single_period)
+
+    total_added = 0
+    total_failed = 0
+    for index, thread in enumerate(thread_list):
+        print("Main    : before joining thread ", index)
+        thread.join()
+        print("Main    : thread ", index, " done")
+        total_added += resources[index].total_added
+        total_failed += resources[index].total_failed
+
+    message = f'Total Added: {total_added}, Total Failed Approximated: {total_failed}'
+    app_settings.logger.info(message)
+    print(message)
+
+
+
+def masking_execute(params, app_settings):
+
+    message = f'Masking Started..'
+    print(message)
+    app_settings.logger.info(message)
+
+    # Assert mandatory files/dirs
+    assert os.path.isdir(params.input_dir), 'input file is not a valid directory name'
+    assert os.path.isfile(params.mapping_path), 'mapping file is not a valid file name'
+    assert os.path.isdir(params.output_dir), 'output_dir is not a valid directory name'
+
+    # Assert and read important_token_file if exists
+    important_token_file = None
+    if params.important_token_file != '':
+        assert os.path.isfile(params.important_token_file), 'important_token_file is not a valid file name'
+        important_token_file = CustomUserFile(params.important_token_file)
+
+    # Assert and read custom_tokens if exist
+    if params.custom_token_dir != '':
+        assert os.path.isdir(params.custom_token_dir), 'custom_token_file is not a valid directory name'
+        custom_tokens_filename_list = [f for f in os.listdir(params.custom_token_dir) if os.path.isfile(os.path.join(params.custom_token_dir, f))]
+        for f in custom_tokens_filename_list:
+            params.data.custom_tokens_filename_list.append(os.path.join(params.custom_token_dir, f))
+        params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file)
+
+    # Read mandatory files
+    mapping_file = cli_file_read(params.mapping_path)
+    params.data.mapping_file_objects.append(mapping_file)
+    params.data.destination_folder = params.output_dir
+
+    # Read input files and execute
+    input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
+    for f in input_files:
+
+        if f.find('sys_choice') == -1 and f.find('cmn_schedule_span') == -1 and f.find('sys_user_grmember') == -1:
+            input_file = cli_file_read(os.path.join(params.input_dir, f))
+            params.data.file_objects.append(input_file)
+            cli_file_process(input_file, mapping_file, params.data.cleaner, params, app_settings)
+        else:
+            input_file = cli_file_read(os.path.join(params.input_dir, f))
+            input_file.save_data_to_file(input_file.data, params.data.destination_folder)
+
+
+def cli_file_process(input_file, mapping_file, cleaner, params, app_settings):
+    try:
+        message = f"Processing input file: {input_file.filename}"
+        print(message)
+        app_settings.logger.info(message)
+        f0 = time()
+        output_data = input_file.data
+
+        for column in output_data:
+            message = f'Column: {column} | Start", end=" | '
+            print(message)
+            app_settings.logger.info(message)
+
+            c0 = time()
+            method = NONE_ACTION
+
+            if mapping_file.filename != '' and \
+                    mapping_file.data is not None and \
+                    column in mapping_file.data['column'].to_list() and \
+                    mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
+
+                method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
+
+            if method == NONE_ACTION:
+                pass
+            elif method == MASK:
+                pass
+            elif method == ANONYMIZE:
+
+                if params.data.custom_tokens_filename_list is not None and params.data.custom_tokens_filename_list != []:
+
+                    output_data[column] = output_data[column].fillna('')
+                    output_data[column] = cleaner.transform(output_data[column].values.tolist())
+
+            message = f'End | took: {time()-c0}'
+            print(message)
+            app_settings.logger.info(message)
+
+        output_filename = os.path.join(params.data.destination_folder,
+                                       input_file.non_extension_part + '_processed.' + input_file.ext)
+        input_file.save_data_to_file(output_data, params.data.destination_folder)
+
+        message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
+        print(message)
+        app_settings.logger.info(message)
+
+    except Exception as e:
+        message = f'File processing FAILED for file: {input_file.filename}. Reason: {e}'
+        print(message)
+        app_settings.logger.info(message)
+
+
+def cli_file_read(filename):
+    try:
+        view_name = os.path.split(filename)[-1]
+        obj = {
+            "selected": True,
+            "filename": filename,
+            "ext": filename.split('.')[-1],
+            "view_name": view_name,
+            "listbox_index": None,
+            "is_cli": True
+        }
+
+        file_object = File(**obj)
+
+        try:
+
+            if file_object.ext == 'xlsx':
+                file_object.data = read_excel(file_object.filename)
+
+            if file_object.ext == 'csv':
+                try:
+                    file_object.data = read_csv(file_object.filename, encoding='utf-8')
+                except Exception:
+                    try:
+                        file_object.data = read_csv(file_object.filename, encoding='latin-1')
+                    except Exception:
+                        file_object.data = read_csv(file_object.filename, encoding='utf-8-sig')
+
+            if file_object.ext == 'json':
+                try:
+                    # JSON file
+                    f = open(file_object.filename, "r",encoding='utf-8')
+                except Exception:
+                    try:
+                        f = open(file_object.filename, "r", encoding='latin-1')
+                    except Exception:
+                        f = open(file_object.filename, "r", encoding='utf-8-sig')
+
+                # Reading from file
+                data = json.loads(f.read())
+
+                # Checking the json structure
+                if 'records' in data:
+                    file_object.data = DataFrame(data['records'])
+                else:
+                    file_object.data = DataFrame(data)
+
+            return file_object
+
+        except Exception as e:
+            print(e.__str__())
+
+    except Exception as e:
+        message = f"Error parsing {filename}. {e}"
+        print(message)
+        raise Exception(message)
 
 def params_initialize():
 
@@ -137,6 +498,22 @@ def params_initialize():
     params.extracting.start_date = None
     params.extracting.end_date = None
     params.extracting.url = None
+
+
+    # params.masking.input_dir = None
+    params.masking.mapping_path = None
+    params.masking.custom_token_dir = None
+    params.masking.important_token_file = None
+
+    params.masking.data = SimpleNamespace()
+    params.masking.data.user_selected_file_list = {}
+    params.masking.data.custom_tokens_filename = None
+    params.masking.data.custom_tokens_filename_list = []
+    params.masking.data.destination_folder = None
+    params.masking.data.file_objects = []
+    params.masking.data.mapping_file_objects = []
+    params.masking.data.file_counter = 0
+    params.masking.data.chunk_size = 50
 
     return params
 
