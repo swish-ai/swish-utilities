@@ -9,6 +9,7 @@ from datetime import datetime, timedelta
 from src.extractor_resource import Extractor
 from types import SimpleNamespace
 from src.settings import Settings
+from src.file import File
 from pandas import read_csv, read_excel, DataFrame
 from src.cleaner import TextCleaner, CustomUserFile
 from time import time
@@ -20,73 +21,6 @@ ANONYMIZE: int = 2
 NONE_ACTION: int = 3
 
 
-class File:
-    def __init__(self, filename, ext, selected, listbox_index, view_name, is_cli = False):
-        self.view_name = view_name
-        self.listbox_index = listbox_index
-        self.filename = filename
-        self.ext = ext
-        self.selected = selected
-        self.cleaner = None
-
-        # Extras
-        try:
-            self.non_extension_part = os.path.split(filename)[-1].split('.')[0]
-        except Exception as e:
-            print(e.__str__())
-            self.non_extension_part = 'NewFile'
-            print('failed to extract non extension part from file name')
-
-        # ------ Pandas DataFrame ------ #
-        self.data: DataFrame = None
-        self.all_data: DataFrame = None
-        self.preview_data: DataFrame = None
-
-        self.transform_method_button: dict = {}
-
-    def save_data_to_file(self, output_data, destination_folder):
-        try:
-            output_filename = os.path.join(destination_folder,
-                                           self.non_extension_part + '_processed.' + self.ext)
-
-            if self.ext == 'xlsx':
-                output_data.to_excel(r'' + output_filename,
-                                     encoding='utf-8-sig')
-            elif self.ext == 'csv':
-                try:
-                    output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='utf-8-sig')
-                except Exception:
-                    try:
-                        output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='utf-8')
-                    except Exception:
-                        output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='latin-1')
-
-            elif self.ext == 'json':
-                try:
-                    with open(output_filename, 'w', encoding='utf-8') as file:
-                        output_data.to_json(file, force_ascii=False, orient='records')
-                except Exception:
-                    with open(output_filename, 'w', encoding='utf-8-sig') as file:
-                        output_data.to_json(file, force_ascii=False, orient='records')
-
-        except Exception as e:
-            message = f'Error while saving file to: {output_filename}. {e.__str__()}'
-            print(message)
-            raise Exception(message)
-
-    def set_column_function(self, column=None, method=None):
-
-        if not method:
-            method = self.transform_method_button[column]
-        if not isinstance(method, int):
-            method = method.get()
-
-        self.change_column_method(column, method)
-
-        return method
-
-    def change_column_method(self, column, method):
-        self.transform_method_button[column] = method
 
 
 def main(argv):
@@ -111,7 +45,7 @@ def main(argv):
                                         "mask", "extract",
                                         "url=",
                                         "start_date=", "end_date=", "output_dir=", "batch_size=",
-                                        "compress=",
+                                        "compress",
                                         "username=", "password=", "interval=","stop_limit=",
                                         "file_limit=", "parallel=",
                                         "input_dir=", "mapping_path=", "custom_token_dir=",
@@ -147,11 +81,11 @@ def main(argv):
                 elif opt in ("--password"):
                     params.extracting.password = arg
                 elif opt in ("--interval"):
-                    params.extracting.interval = int(arg)
+                    params.extracting.interval = float(arg)
                 elif opt in ("--compress"):
                     params.extracting.compress = True
-                    if params.compress:
-                        params.extracting.extension = 'gz'
+                    params.masking.compress = True
+                    params.extracting.extension = 'gz'
                 elif opt in ("--stop_limit"):
                     params.extracting.stop_limit = int(arg)
                 elif opt in ("--file_limit"):
@@ -200,7 +134,7 @@ def cli_script_execute(params, app_settings):
 
         try:
             if params.extracting.enabled:
-                extracting_execute(params.extracting, app_settings)
+                extracting_execute(params, app_settings)
         except Exception as error:
             raise Exception(f'Extracting error, {error}')
 
@@ -245,24 +179,24 @@ def extracting_execute(params, app_settings):
 
     # Assert mandatory files/dirs
     try:
-        for key in params.__dict__:
-            assert params.__dict__[key] is not None, f'{key} argument is missing'
+        for key in params.extracting.__dict__:
+            assert params.extracting.__dict__[key] is not None, f'{key} argument is missing'
 
-        if not params.__dict__.__contains__('output_dir'):
+        if not params.extracting.__dict__.__contains__('output_dir'):
             dir = 'output'
-            params.output_dir = os.path.join(os.getcwd(), dir)
-            if not os.path.isdir(params.output_dir):
+            params.extracting.output_dir = os.path.join(os.getcwd(), dir)
+            if not os.path.isdir(params.extracting.output_dir):
                 os.mkdir(dir)
 
-        message = f'Output directory is "{params.output_dir}'
+        message = f'Output directory is "{params.extracting.output_dir}'
         app_settings.logger.info(message)
         print(message)
 
         results = []
-        if params.parallelism_level > 1 :
-            extracting_multithreading_execution(params, app_settings)
+        if params.extracting.parallelism_level > 1 :
+            extracting_multithreading_execution(params.extracting, app_settings)
         else:
-            api_resource= Extractor(params.start_date, params.end_date, 0, app_settings)
+            api_resource= Extractor(params.extracting.start_date, params.extracting.end_date, 0, app_settings)
             api_resource.api_extract(params)
 
             message = f'Total Added: {api_resource.total_added}, Total Failed Approximated: {api_resource.total_failed}'
@@ -358,13 +292,13 @@ def masking_execute(params, app_settings):
     input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     for f in input_files:
 
-        if f.find('sys_choice') == -1 and f.find('cmn_schedule_span') == -1 and f.find('sys_user_grmember') == -1:
+        # if f.find('sys_choice') == -1 and f.find('cmn_schedule_span') == -1 and f.find('sys_user_grmember') == -1:
             input_file = cli_file_read(os.path.join(params.input_dir, f))
             params.data.file_objects.append(input_file)
             cli_file_process(input_file, mapping_file, params.data.cleaner, params, app_settings)
-        else:
-            input_file = cli_file_read(os.path.join(params.input_dir, f))
-            input_file.save_data_to_file(input_file.data, params.data.destination_folder)
+        # else:
+        #     input_file = cli_file_read(os.path.join(params.input_dir, f))
+        #     input_file.save_data_to_file(input_file.data, params.data.destination_folder)
 
 
 def cli_file_process(input_file, mapping_file, cleaner, params, app_settings):
@@ -407,7 +341,7 @@ def cli_file_process(input_file, mapping_file, cleaner, params, app_settings):
 
         output_filename = os.path.join(params.data.destination_folder,
                                        input_file.non_extension_part + '_processed.' + input_file.ext)
-        input_file.save_data_to_file(output_data, params.data.destination_folder)
+        input_file.save_data_to_file(output_data, params.data.destination_folder, params)
 
         message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
         print(message)
@@ -427,7 +361,6 @@ def cli_file_read(filename):
             "filename": filename,
             "ext": filename.split('.')[-1],
             "view_name": view_name,
-            "listbox_index": None,
             "is_cli": True
         }
 
@@ -504,6 +437,7 @@ def params_initialize():
     params.masking.mapping_path = None
     params.masking.custom_token_dir = None
     params.masking.important_token_file = None
+    params.masking.compress = False
 
     params.masking.data = SimpleNamespace()
     params.masking.data.user_selected_file_list = {}

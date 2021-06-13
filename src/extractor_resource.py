@@ -2,6 +2,7 @@ import requests
 import datetime
 import os
 import json, gzip
+from zipfile import ZipFile
 from time import time
 from requests.auth import HTTPBasicAuth
 
@@ -43,24 +44,24 @@ class Extractor:
             print(message)
             self.settings.logger.info(message)
 
-            params.headers = {
+            params.extracting.headers = {
                 'Content-type': 'application/json'
             }
-            params.auth = HTTPBasicAuth(params.username, params.password)
+            params.extracting.auth = HTTPBasicAuth(params.extracting.username, params.extracting.password)
 
             batch_start_date = self.start_date
-            batch_end_date = batch_start_date + datetime.timedelta(hours=params.interval)
-            while self.total_added < params.stop_limit and batch_start_date < batch_end_date:
+            batch_end_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
+            while self.total_added < params.extracting.stop_limit and batch_start_date < batch_end_date:
 
                 if batch_end_date >= self.end_date:
                     batch_end_date = self.end_date
 
-                self.response_size = params.batch_size
+                self.response_size = params.extracting.batch_size
                 self.offset = 0
 
-                while self.response_size >= params.batch_size and self.total_added < params.stop_limit:
-                    url = params.url
-                    url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.batch_size}'
+                while self.response_size >= params.extracting.batch_size and self.total_added < params.extracting.stop_limit:
+                    url = params.extracting.url
+                    url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
                     message = f'Thread: {self.thread_id}, URL: {url}'
                     print(message)
                     self.settings.logger.info(message)
@@ -76,8 +77,8 @@ class Extractor:
                         break
 
 
-                batch_start_date = batch_start_date + datetime.timedelta(hours=params.interval)
-                batch_end_date = batch_end_date + datetime.timedelta(hours=params.interval)
+                batch_start_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
+                batch_end_date = batch_end_date + datetime.timedelta(hours=params.extracting.interval)
 
         except KeyboardInterrupt:
             message = f'Code Interrupted by User'
@@ -101,10 +102,10 @@ class Extractor:
     def handle_api_request(self, params, url, trial_number):
         try:
             t1 = time()
-            resp = self.session.get(url, headers=params.headers, auth = params.auth)
+            resp = self.session.get(url, headers=params.extracting.headers, auth = params.extracting.auth)
             response_time = round(time() - t1, 3)
 
-            self.offset += params.batch_size
+            self.offset += params.extracting.batch_size
             resp_body = resp.json()
 
             if resp.status_code == 200 and resp_body.__contains__('result') and not resp_body.__contains__('error'):
@@ -124,7 +125,7 @@ class Extractor:
                 self.settings.logger.info(message)
                 print(message)
 
-                if len(self.total_results) >= params.file_limit:
+                if len(self.total_results) >= params.extracting.file_limit:
                     message = 'File Split'
                     print(message)
                     self.settings.logger.info(message)
@@ -151,15 +152,17 @@ class Extractor:
                 message = f"Error: Totally Failed fetching from API. Trial: {trial_number} . Info: {error}"
                 self.settings.logger.error(message)
                 print(message)
-                self.total_failed += params.batch_size
+                self.total_failed += params.extracting.batch_size
                 raise Exception(message)
 
     def save_data_to_file(self, results, params):
         try:
             print(self.thread_id)
 
-            output_filename = os.path.join(params.output_dir,'output_' + self.settings.reset_timestamp() +
-                            '_' + str(self.thread_id) + '.' + params.extension)
+            output_filename = os.path.join(params.extracting.output_dir,'output_' + self.settings.reset_timestamp() +
+                            '_' + str(self.thread_id))
+                            # '_' + str(self.thread_id) + '.' + params.extracting.extension)
+            params.output_filename = output_filename
 
             # Validate results as json
             try:
@@ -173,21 +176,11 @@ class Extractor:
                 print(message)
 
             try:
-                if params.compress:
-                    with gzip.open(output_filename, 'wt', encoding="utf-8") as zipfile:
-                        json.dump(results, zipfile)
-                else:
-                    with open(output_filename, 'w', encoding='utf-8') as f:
-                        json.dump(results, f)
+                self.write_to_json_file(results,params,'utf-8')
             except Exception as e:
                 print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
 
-                if params.compress:
-                    with gzip.open(output_filename, 'wt', encoding="utf-8-sig") as zipfile:
-                        json.dump(results, zipfile)
-                else:
-                    with open(output_filename, 'w', encoding='utf-8-sig') as f:
-                        json.dump(results, f)
+                self.write_to_json_file(results,params,'utf-8-sig')
 
             message = f'Writing to file COMPLETED SUCCESSFULLY for file:{output_filename}'
             self.settings.logger.info(message)
@@ -197,6 +190,20 @@ class Extractor:
             message = f'Error while saving file. {e}'
             self.settings.logger.exception(message)
             raise Exception(message)
+
+    def write_to_json_file(self, results, params, encoding):
+
+
+        if params.extracting.compress and not params.masking.enabled:
+            with gzip.open(params.output_filename + '.json.gz', 'wt', encoding= encoding) as zipfile:
+                json.dump(results, zipfile)
+        else:
+            with open(params.output_filename + '.json', 'w', encoding= encoding) as f:
+                json.dump(results, f)
+
+            # ZipFile(f'{params.output_filename}.zip', mode='w').write(params.output_filename)
+
+        # pass
 
 
 
