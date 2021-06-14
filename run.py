@@ -194,7 +194,7 @@ def extracting_execute(params, app_settings):
 
         results = []
         if params.extracting.parallelism_level > 1 :
-            extracting_multithreading_execution(params.extracting, app_settings)
+            extracting_multithreading_execution(params, app_settings)
         else:
             api_resource= Extractor(params.extracting.start_date, params.extracting.end_date, 0, app_settings)
             api_resource.api_extract(params)
@@ -215,24 +215,24 @@ def extracting_execute(params, app_settings):
 def extracting_multithreading_execution(params, app_settings):
 
     thread_list = list()
-    total_period = params.end_date - params.start_date
-    single_period = total_period.total_seconds() / params.parallelism_level
-    batch_start_date = params.start_date
+    total_period = params.extracting.end_date - params.extracting.start_date
+    single_period = total_period.total_seconds() / params.extracting.parallelism_level
+    batch_start_date = params.extracting.start_date
     batch_end_date = batch_start_date + timedelta(seconds=single_period)
 
-    resources = [None] * params.parallelism_level
-    for thread_id in range(params.parallelism_level):
+    resources = [None] * params.extracting.parallelism_level
+    for thread_id in range(params.extracting.parallelism_level):
         thread_params  = params
-        thread_params.start_date = batch_start_date
-        thread_params.end_date = batch_end_date
-        thread_params.thread_id = thread_id
+        thread_params.extracting.start_date = batch_start_date
+        thread_params.extracting.end_date = batch_end_date
+        thread_params.extracting.thread_id = thread_id
 
         resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)))
 
         batch_start_date = batch_start_date + timedelta(seconds=single_period)
         batch_end_date = batch_end_date + timedelta(seconds=single_period)
 
-    for thread_id in range(params.parallelism_level):
+    for thread_id in range(params.extracting.parallelism_level):
         #
         thread_params = params
         thread = threading.Thread(target=resources[thread_id].api_extract, args=(thread_params,))
