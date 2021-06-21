@@ -35,7 +35,7 @@ def main(argv):
         app_settings = Settings('base')
         params = params_initialize()
 
-        message = f'Running DC_Multi_Utility..'
+        message = f'Running DC_Utilities..'
         app_settings.logger.info(message)
         print(message)
 
