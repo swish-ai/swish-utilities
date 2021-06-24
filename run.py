@@ -35,7 +35,7 @@ def main(argv):
         app_settings = Settings('base')
         params = params_initialize()
 
-        message = f'Running DC_Multi_Utility..'
+        message = f'Running DC_Utilities..'
         app_settings.logger.info(message)
         print(message)
 
@@ -281,7 +281,8 @@ def masking_execute(params, app_settings):
         custom_tokens_filename_list = [f for f in os.listdir(params.custom_token_dir) if os.path.isfile(os.path.join(params.custom_token_dir, f))]
         for f in custom_tokens_filename_list:
             params.data.custom_tokens_filename_list.append(os.path.join(params.custom_token_dir, f))
-        params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file)
+
+    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file)
 
     # Read mandatory files
     mapping_file = cli_file_read(params.mapping_path)
@@ -435,7 +436,7 @@ def params_initialize():
 
     # params.masking.input_dir = None
     params.masking.mapping_path = None
-    params.masking.custom_token_dir = None
+    params.masking.custom_token_dir = ''
     params.masking.important_token_file = None
     params.masking.compress = False
 
