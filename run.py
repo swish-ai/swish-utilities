@@ -6,6 +6,7 @@ import getopt
 import threading
 
 from datetime import datetime, timedelta
+from src.data_filter import ColumnFilter
 from src.extractor_resource import Extractor
 from types import SimpleNamespace
 from src.settings import Settings
@@ -30,7 +31,10 @@ def main(argv):
                        ' --file_limit FILE_LIMIT [--stop_limit STOP_LIMIT] [--compress] ' \
                        '[--parallel PARALLELISM_LEVEL]' \
                        '--input_dir INPUT_DIR --mapping_path MAPPING_PATH ' \
-                       '--custom_token_dir CUSTOM_TOKEN_DIR [--important_token_path IMPORTANT_TOKEN_PATH]'
+                       '--custom_token_dir CUSTOM_TOKEN_DIR [--important_token_path IMPORTANT_TOKEN_PATH] ' \
+                       '[--id_list_path path to filtering file in csv format] '\
+                       '[--id_field_name name of field in the filtering file] ' \
+                       '[--data_id_name name of field in the source data] '
 
         app_settings = Settings('base')
         params = params_initialize()
@@ -49,7 +53,8 @@ def main(argv):
                                         "username=", "password=", "interval=","stop_limit=",
                                         "file_limit=", "parallel=",
                                         "input_dir=", "mapping_path=", "custom_token_dir=",
-                                        "important_token_file="])
+                                        "important_token_file=",
+                                        "id_list_path=", "id_field_name=", "data_id_name="])
         except getopt.GetoptError as e:
             print(e)
             print('Right usage: ',help_message)
@@ -92,6 +97,12 @@ def main(argv):
                     params.extracting.file_limit = int(arg)
                 elif opt in ("--parallel"):
                     params.extracting.parallelism_level = int(arg)
+                elif opt in ("--id_list_path"):
+                    params.extracting.id_list_path = arg
+                elif opt in ("--id_field_name"):
+                    params.extracting.id_field_name = arg
+                elif opt in ("--data_id_name"):
+                    params.extracting.data_id_name = arg
 
                 # Masking Arguments
                 elif opt in ("--input_dir"):
@@ -134,7 +145,11 @@ def cli_script_execute(params, app_settings):
 
         try:
             if params.extracting.enabled:
-                extracting_execute(params, app_settings)
+                filter_by_column = None
+                if params.extracting.id_list_path:
+                    ids_file = cli_file_read(params.extracting.id_list_path)
+                    filter_by_column = ColumnFilter(ids_file.data, params.extracting.id_field_name, params.extracting.data_id_name)
+                extracting_execute(params, app_settings, filter_by_column)
         except Exception as error:
             raise Exception(f'Extracting error, {error}')
 
@@ -175,7 +190,7 @@ def validate_params(params, type):
         message = f'{type} output directory is "{params.output_dir}'
         print(message)
 
-def extracting_execute(params, app_settings):
+def extracting_execute(params, app_settings, filter_by_column):
 
     # Assert mandatory files/dirs
     try:
@@ -194,9 +209,9 @@ def extracting_execute(params, app_settings):
 
         results = []
         if params.extracting.parallelism_level > 1 :
-            extracting_multithreading_execution(params, app_settings)
+            extracting_multithreading_execution(params, app_settings, filter_by_column)
         else:
-            api_resource= Extractor(params.extracting.start_date, params.extracting.end_date, 0, app_settings)
+            api_resource= Extractor(params.extracting.start_date, params.extracting.end_date, 0, app_settings, filter_by_column=filter_by_column)
             api_resource.api_extract(params)
 
             message = f'Total Added: {api_resource.total_added}, Total Failed Approximated: {api_resource.total_failed}'
@@ -212,7 +227,7 @@ def extracting_execute(params, app_settings):
     app_settings.logger.info(message)
     print(message)
 
-def extracting_multithreading_execution(params, app_settings):
+def extracting_multithreading_execution(params, app_settings, filter_by_column):
 
     thread_list = list()
     total_period = params.extracting.end_date - params.extracting.start_date
@@ -227,7 +242,7 @@ def extracting_multithreading_execution(params, app_settings):
         thread_params.extracting.end_date = batch_end_date
         thread_params.extracting.thread_id = thread_id
 
-        resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)))
+        resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)), filter_by_column=filter_by_column)
 
         batch_start_date = batch_start_date + timedelta(seconds=single_period)
         batch_end_date = batch_end_date + timedelta(seconds=single_period)
@@ -432,6 +447,9 @@ def params_initialize():
     params.extracting.start_date = None
     params.extracting.end_date = None
     params.extracting.url = None
+    params.extracting.id_list_path = ''
+    params.extracting.id_field_name = 'sys_id'
+    params.extracting.data_id_name = ''
 
 
     # params.masking.input_dir = None

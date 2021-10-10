@@ -8,7 +8,7 @@ from requests.auth import HTTPBasicAuth
 
 
 class Extractor:
-    def __init__(self, start_date, end_date, thread_id, app_settings = None):
+    def __init__(self, start_date, end_date, thread_id, app_settings = None, filter_by_column=None):
 
         self.settings = app_settings
         self.session = requests.Session()
@@ -27,6 +27,7 @@ class Extractor:
         self.start_date = start_date
         self.end_date = end_date
         self.thread_id = thread_id
+        self.filter_by_column = filter_by_column
 
 
     def api_extract(self, params):
@@ -116,6 +117,11 @@ class Extractor:
                     json.dumps(results)
                 except Exception as error:
                     raise Exception('Corrupted JSON from API')
+                
+                res_len = len(results)
+                results = self.filter_by_column(results) if self.filter_by_column is not None else results
+                filtered_len = res_len - len(results)
+                self.settings.logger.info(f'Filtered out {filtered_len} of {res_len}')
 
                 self.total_results += results
                 self.response_size = len(results)
@@ -155,13 +161,17 @@ class Extractor:
                 self.total_failed += params.extracting.batch_size
                 raise Exception(message)
 
+    
+    def get_output_filename(self, params):
+        return os.path.join(params.extracting.output_dir,'output_' + self.settings.reset_timestamp() +
+                            '_' + str(self.thread_id))
+
     def save_data_to_file(self, results, params):
         try:
             print(self.thread_id)
 
-            output_filename = os.path.join(params.extracting.output_dir,'output_' + self.settings.reset_timestamp() +
-                            '_' + str(self.thread_id))
-                            # '_' + str(self.thread_id) + '.' + params.extracting.extension)
+            output_filename = self.get_output_filename(params)
+
             params.output_filename = output_filename
 
             # Validate results as json
