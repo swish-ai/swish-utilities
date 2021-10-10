@@ -62,7 +62,7 @@ class Extractor:
 
                 while self.response_size >= params.extracting.batch_size and self.total_added < params.extracting.stop_limit:
                     url = params.extracting.url
-                    url += f'?^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+                    url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
                     message = f'Thread: {self.thread_id}, URL: {url}'
                     print(message)
                     self.settings.logger.info(message)
@@ -118,7 +118,10 @@ class Extractor:
                 except Exception as error:
                     raise Exception('Corrupted JSON from API')
                 
+                res_len = len(results)
                 results = self.filter_by_column(results) if self.filter_by_column is not None else results
+                filtered_len = res_len - len(results)
+                self.settings.logger.info(f'Filtered out {filtered_len} of {res_len}')
 
                 self.total_results += results
                 self.response_size = len(results)

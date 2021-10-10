@@ -1,3 +1,22 @@
+from src.extractor_resource import Extractor
+from logging import FileHandler
+
+patched = False
+
+UNITEST_OUTPUT_FILE_PREFIX = 'extracting_output/__unitest_output'
+UNITEST_OUTPUT_FILE = f'{UNITEST_OUTPUT_FILE_PREFIX}.json'
+
+def patch_for_tests():
+    global patched
+    if patched:
+        return
+    FileHandler._open = lambda a: None 
+    # monkeypatch  to prevent files creation
+    FileHandler._open = lambda a: None 
+    FileHandler.emit = lambda a, b: None
+    # monkeypatch Extractor for tests
+    Extractor.get_output_filename = lambda self, params: UNITEST_OUTPUT_FILE_PREFIX if self.thread_id == 0 else f'{UNITEST_OUTPUT_FILE_PREFIX}_{self.thread_id}'
+
 
 SNOW_RESPONSE_WITH_CUSTOM_ID = """
 {

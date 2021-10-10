@@ -31,7 +31,10 @@ def main(argv):
                        ' --file_limit FILE_LIMIT [--stop_limit STOP_LIMIT] [--compress] ' \
                        '[--parallel PARALLELISM_LEVEL]' \
                        '--input_dir INPUT_DIR --mapping_path MAPPING_PATH ' \
-                       '--custom_token_dir CUSTOM_TOKEN_DIR [--important_token_path IMPORTANT_TOKEN_PATH]'
+                       '--custom_token_dir CUSTOM_TOKEN_DIR [--important_token_path IMPORTANT_TOKEN_PATH] ' \
+                       '[--id_list_path path to filtering file in csv format] '\
+                       '[--id_field_name name of field in the filtering file] ' \
+                       '[--data_id_name name of field in the source data] '
 
         app_settings = Settings('base')
         params = params_initialize()
@@ -446,7 +449,7 @@ def params_initialize():
     params.extracting.url = None
     params.extracting.id_list_path = ''
     params.extracting.id_field_name = 'sys_id'
-    params.extracting.data_id_name = 'sys_id'
+    params.extracting.data_id_name = ''
 
 
     # params.masking.input_dir = None

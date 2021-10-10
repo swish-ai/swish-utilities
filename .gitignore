@@ -57,3 +57,6 @@ Thumbs.db
 # Unitest output
 __unitest_output.json
 
+build/
+extracting_output/
+
