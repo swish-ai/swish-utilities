@@ -456,7 +456,7 @@ def params_initialize():
     params.extracting.extension = 'json'
     params.extracting.compress = False
     params.extracting.username = None
-    params.extracting.password = None
+    params.extracting.password = ''
     params.extracting.start_date = None
     params.extracting.end_date = None
     params.extracting.url = None

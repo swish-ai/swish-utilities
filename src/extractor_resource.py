@@ -5,6 +5,7 @@ import json, gzip
 from zipfile import ZipFile
 from time import time
 from requests.auth import HTTPBasicAuth
+import getpass
 
 
 class Extractor:
@@ -49,7 +50,11 @@ class Extractor:
             params.extracting.headers = {
                 'Content-type': 'application/json'
             }
-            params.extracting.auth = HTTPBasicAuth(params.extracting.username, params.extracting.password)
+            password = params.extracting.password
+            if not password:
+                password = getpass.getpass(prompt='Password: ', stream=None)
+
+            params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
 
             batch_start_date = self.start_date
             batch_end_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
