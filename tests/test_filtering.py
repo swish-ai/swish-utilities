@@ -87,5 +87,32 @@ class FilteringTestCase(TestCase):
                 "--id_field_name", "user"]
         main(args)
 
+
+        assert os.path.isfile(UNITEST_OUTPUT_FILE)
+
+    def test_exctarct_csv(self):
+
+        with open('tests/data/sys_audit.json', 'r') as f:
+            mock_data = f.read()
+
+        assert not os.path.isfile(
+            UNITEST_OUTPUT_FILE), "The file should be deleted"
+        
+        
+
+        mock_session = requests_mock.Mocker()
+        mock_session.register_uri(requests_mock.ANY,
+                                  'https://dev71074.service-now.com/api/now/table/sys_audit',
+                                  text=mock_data)
+        mock_session.start()
+
+        args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
+                "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--out_props_csv_path", "dock_ids.csv"]
+        main(args)
+
+        data = read_csv(f"dock_ids.csv", encoding='utf-8')
+        assert len(data['documentkey'].values) == 9, "wrong output count"
+
         assert os.path.isfile(UNITEST_OUTPUT_FILE)
         

@@ -15,6 +15,4 @@ class ColumnFilter:
             return None
         column_name = self.column_name
         values_set = self.values_set
-        for item in items:
-            print(item[column_name])
         return [item for item in items if column_name in item and item[column_name] in values_set]
