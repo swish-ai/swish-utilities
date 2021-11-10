@@ -72,6 +72,24 @@ class SelectiveExtractionTesting(TestCase):
         ids = read_csv(TEST_IDS_FILE, encoding='utf-8')['sys_id']
         for id in ids:
             assert len([d for d in data if d['sys_id'] == str(id)])
+    
+    def test_selective_with_prop_extraction(self):
+        assert not os.path.isfile(
+            UNITEST_OUTPUT_FILE), "The file should be deleted"
+        mock_session = requests_mock.Mocker()
+        mock_session.register_uri(requests_mock.ANY,
+                                  'https://dev71074.service-now.com/api/now/table/sys_audit',
+                                  text=SNOW_RESPONSE1)
+        mock_session.start()
+
+        args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
+                "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--start_date", "2021-10-03", "--end_date", "2021-10-04", "--id_list_path", TEST_IDS_FILE,
+                "--out_props_csv_path", "qwerty.csv", "--out_prop_name", "sys_created_on"]
+        main(args)
+
+        data = read_csv(f"qwerty.csv", encoding='utf-8')
+        assert len(data['sys_created_on'].values) == 1, "wrong output count"
 
     def test_selective_with_id_column(self):
         assert not os.path.isfile(

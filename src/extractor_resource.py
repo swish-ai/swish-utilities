@@ -5,10 +5,11 @@ import json, gzip
 from zipfile import ZipFile
 from time import time
 from requests.auth import HTTPBasicAuth
+import getpass
 
 
 class Extractor:
-    def __init__(self, start_date, end_date, thread_id, app_settings = None, filter_by_column=None):
+    def __init__(self, start_date, end_date, thread_id, app_settings=None, filter_by_column=None, data_proccessor=None):
 
         self.settings = app_settings
         self.session = requests.Session()
@@ -28,6 +29,7 @@ class Extractor:
         self.end_date = end_date
         self.thread_id = thread_id
         self.filter_by_column = filter_by_column
+        self.data_proccessor = data_proccessor
 
 
     def api_extract(self, params):
@@ -48,7 +50,11 @@ class Extractor:
             params.extracting.headers = {
                 'Content-type': 'application/json'
             }
-            params.extracting.auth = HTTPBasicAuth(params.extracting.username, params.extracting.password)
+            password = params.extracting.password
+            if not password:
+                password = getpass.getpass(prompt='Password: ', stream=None)
+
+            params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
 
             batch_start_date = self.start_date
             batch_end_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
@@ -120,6 +126,9 @@ class Extractor:
                 
                 res_len = len(results)
                 results = self.filter_by_column(results) if self.filter_by_column is not None else results
+                if self.data_proccessor:
+                    self.data_proccessor(results)
+
                 filtered_len = res_len - len(results)
                 self.settings.logger.info(f'Filtered out {filtered_len} of {res_len}')
 
@@ -214,6 +223,27 @@ class Extractor:
             # ZipFile(f'{params.output_filename}.zip', mode='w').write(params.output_filename)
 
         # pass
+
+class DefaultDataProccessor:
+    def __init__(self, out_path, prop_name):
+        self.out_path = out_path
+        self.prop_name = prop_name
+        self.results_set = set()
+
+    def __call__(self, items):
+        if items is not None:
+            prop_name = self.prop_name
+            self.results_set.update([item[prop_name] for item in items if prop_name in item])
+
+    def finalize(self):
+        directory = os.path.dirname(self.out_path)
+        if directory and os.path.exists(directory):
+            os.makedirs(directory)
+
+        with open(self.out_path, 'w+') as out:
+            out.write(f'{self.prop_name}\n')
+            out.write('\n'.join(self.results_set))
+            
 
 
 
