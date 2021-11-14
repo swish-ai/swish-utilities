@@ -7,7 +7,7 @@ import threading
 
 from datetime import datetime, timedelta
 from src.data_filter import ColumnFilter
-from src.extractor_resource import DefaultDataProccessor, Extractor
+from src.extractor_resource import CsvFromJson, DefaultDataProccessor, Extractor
 from types import SimpleNamespace
 from src.settings import Settings
 from src.file import File
@@ -35,8 +35,9 @@ def main(argv):
                        '[--id_list_path path to filtering file in csv format] '\
                        '[--id_field_name name of field in the filtering file] ' \
                        '[--data_id_name name of field in the source data] ' \
-                       '[--out_props_csv_path path to output csv containig extracted field set]' \
-                       '[--out_prop_name name of extracted propery]'
+                       '[--out_props_csv_path path to output csv containig extracted field set] ' \
+                       '[--out_prop_name name of extracted propery] ' \
+                       '[--input_sources coma separated filenames or directories containing json]'
 
         app_settings = Settings('base')
         params = params_initialize()
@@ -48,7 +49,7 @@ def main(argv):
         try:
             opts, args = getopt.getopt(argv, "hm:e:u:s:o:b:r:n:w:i:t:f:p:a:c:d:g",
                                        ["h",
-                                        "mask", "extract",
+                                        "mask", "extract", "proccess",
                                         "url=",
                                         "start_date=", "end_date=", "output_dir=", "batch_size=",
                                         "compress",
@@ -57,7 +58,7 @@ def main(argv):
                                         "input_dir=", "mapping_path=", "custom_token_dir=",
                                         "important_token_file=",
                                         "id_list_path=", "id_field_name=", "data_id_name=",
-                                        "out_props_csv_path=", "out_prop_name="])
+                                        "out_props_csv_path=", "out_prop_name=", "input_sources="])
 
         except getopt.GetoptError as e:
             print(e)
@@ -72,6 +73,10 @@ def main(argv):
                     params.masking.enabled = True
                 elif opt in ("--extract"):
                     params.extracting.enabled = True
+                elif opt in ("--proccess"):
+                    params.processing.enabled = True
+                elif opt in ("--input_sources"):
+                    params.processing.input_sources = arg
                 elif opt in ("--url"):
                     url = arg
                     params.extracting.url = arg
@@ -109,8 +114,10 @@ def main(argv):
                     params.extracting.data_id_name = arg
                 elif opt in ("--out_props_csv_path"):
                     params.extracting.out_props_csv_path = arg
+                    params.processing.out_props_csv_path = arg
                 elif opt in ("--out_prop_name"):
                     params.extracting.out_prop_name = arg
+                    params.processing.out_prop_name = arg
 
                 # Masking Arguments
                 elif opt in ("--input_dir"):
@@ -144,6 +151,8 @@ def cli_script_execute(params, app_settings):
     try:
 
 
+        validate_params(params.processing, 'processing')
+
         validate_params(params.extracting, 'extracting')
 
         validate_params(params.masking, 'masking')
@@ -171,6 +180,12 @@ def cli_script_execute(params, app_settings):
                 masking_execute(params.masking, app_settings)
         except Exception as error:
             raise Exception(f'Masking error, {error}')
+        
+        try:
+            if params.processing.enabled:
+                processing_execute(params, app_settings)
+        except Exception as error:
+            raise Exception(f'Processing error, {error}')
 
 
     except Exception as error:
@@ -239,6 +254,22 @@ def extracting_execute(params, app_settings, filter_by_column, data_proccessor):
     message = f'Extracting has FINISHED'
     app_settings.logger.info(message)
     print(message)
+
+def processing_execute(params, app_settings):
+    if not params.processing.input_sources:
+        if os.path.isdir('extracting_output'):
+            params.processing.input_sources = 'extracting_output'
+        else:
+            print('Please specify path to directory containing json files')
+            raise Exception('Cant find jsons dir or file')
+        
+
+    data_proccessor = DefaultDataProccessor(params.processing.out_props_csv_path, params.processing.out_prop_name)
+    input_sources = params.processing.input_sources.split(',')
+    CsvFromJson(app_settings, input_sources, data_proccessor).create_csv()
+    data_proccessor.finalize()
+    app_settings.logger.info(f"Created csv file with {data_proccessor.size()} entities")
+
 
 def extracting_multithreading_execution(params, app_settings, filter_by_column, data_proccessor):
 
@@ -443,6 +474,7 @@ def params_initialize():
     params = SimpleNamespace()
     params.masking = SimpleNamespace()
     params.extracting = SimpleNamespace()
+    params.processing = SimpleNamespace()
 
     params.masking.enabled = False
     params.extracting.enabled = False
@@ -483,6 +515,12 @@ def params_initialize():
     params.masking.data.mapping_file_objects = []
     params.masking.data.file_counter = 0
     params.masking.data.chunk_size = 50
+
+    #params fro data proccessing
+    params.processing.enabled = False
+    params.processing.input_sources = ''
+    params.processing.out_props_csv_path = None
+    params.processing.out_prop_name = 'documentkey'
 
     return params
 
