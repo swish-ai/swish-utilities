@@ -224,6 +224,41 @@ class Extractor:
 
         # pass
 
+
+class CsvFromJson:
+    def __init__(self, settings, files_and_dirs, data_proccessor):
+        self.settings = settings
+        self.data_proccessor = data_proccessor
+        self.files_and_dirs = files_and_dirs
+    
+    def create_csv(self):
+        files_and_dirs = self.files_and_dirs
+        for input_source in files_and_dirs:
+            if os.path.isfile(input_source):
+                self.proccess_file(input_source)
+            elif os.path.isdir(input_source):
+                self.proccess_dir(input_source)
+
+    def proccess_file(self, file_path):
+        if file_path.strip().endswith('.json'):
+            try:
+                with open(file_path) as f:
+                    self.settings.logger.info(f'Going to proccess file: {file_path}')
+                    data_list = json.load(f)
+                    if not isinstance(data_list, list):
+                        data_list = data_list["result"]
+                    self.data_proccessor(data_list)
+            except Exception as e:
+                self.settings.logger.error(f"Error. Info: {e}")
+        else:
+            self.settings.logger.info(f"{file_path} doesn't have json extension, skipping it")
+
+    def proccess_dir(self, dir_path):
+        file_names =  os.listdir(dir_path)
+        for file_name in file_names:
+            file_path = os.path.join(dir_path, file_name)
+            self.proccess_file(file_path)
+
 class DefaultDataProccessor:
     def __init__(self, out_path, prop_name):
         self.out_path = out_path
@@ -235,9 +270,12 @@ class DefaultDataProccessor:
             prop_name = self.prop_name
             self.results_set.update([item[prop_name] for item in items if prop_name in item])
 
+    def size(self):
+        return len(self.results_set)
+
     def finalize(self):
         directory = os.path.dirname(self.out_path)
-        if directory and os.path.exists(directory):
+        if directory and directory != self.out_path and not os.path.isdir(directory):
             os.makedirs(directory)
 
         with open(self.out_path, 'w+') as out:
