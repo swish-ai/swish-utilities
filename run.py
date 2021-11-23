@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from src.settings import Settings
 from src.file import File
 from pandas import read_csv, read_excel, DataFrame
-from src.cleaner import TextCleaner, CustomUserFile
+from src.cleaner import Masker, TextCleaner, CustomUserFile
 from time import time
 
 
@@ -27,6 +27,7 @@ NONE_ACTION: int = 3
 def main(argv):
     try:
         help_message = '--url URL [--mask] [--extract] --output_dir OUTPUT_DIR --start_date START_DATE --end_date END_DATE ' \
+                       '[--export_and_maks]' \
                        '--username USERNAME --password PASSWORD --batch_size BATCH_SIZE --interval INTERVAL' \
                        ' --file_limit FILE_LIMIT [--stop_limit STOP_LIMIT] [--compress] ' \
                        '[--parallel PARALLELISM_LEVEL]' \
@@ -49,7 +50,7 @@ def main(argv):
         try:
             opts, args = getopt.getopt(argv, "hm:e:u:s:o:b:r:n:w:i:t:f:p:a:c:d:g",
                                        ["h",
-                                        "mask", "extract", "proccess",
+                                        "mask", "extract", "proccess", "export_and_maks",
                                         "url=",
                                         "start_date=", "end_date=", "output_dir=", "batch_size=",
                                         "compress",
@@ -73,6 +74,8 @@ def main(argv):
                     params.masking.enabled = True
                 elif opt in ("--extract"):
                     params.extracting.enabled = True
+                elif opt in ("--export_and_maks"):
+                    params.extracting.export_and_maks = True
                 elif opt in ("--proccess"):
                     params.processing.enabled = True
                 elif opt in ("--input_sources"):
@@ -145,6 +148,23 @@ def main(argv):
         sys.exit(2)
 
 
+def create_masker(mapping_params):
+    important_token_file = None
+    if mapping_params.important_token_file:
+        assert os.path.isfile(mapping_params.important_token_file), 'important_token_file is not a valid file name'
+        important_token_file = CustomUserFile(mapping_params.important_token_file)
+    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file)
+    custom_token_dir = mapping_params.custom_token_dir
+    directory = mapping_params.custom_token_dir
+    custom_tokens_filename_list = []
+    if directory and os.path.isdir(directory):
+        custom_tokens_filename_list = [os.path.join(custom_token_dir, f) for f in os.listdir(custom_token_dir) if os.path.isfile(os.path.join(custom_token_dir, f))]
+    
+    assert mapping_params.mapping_path and os.path.isfile(mapping_params.mapping_path), '(--mapping_path) mapping file is not a valid file name'
+    mapping_file = cli_file_read(mapping_params.mapping_path)
+
+    return Masker(cleaner, mapping_file, custom_tokens_filename_list, anonymize_value=ANONYMIZE)
+
 def cli_script_execute(params, app_settings):
 
     # Assert mandatory files/dirs
@@ -169,7 +189,10 @@ def cli_script_execute(params, app_settings):
                 data_proccessor = None
                 if params.extracting.out_props_csv_path:
                     data_proccessor = DefaultDataProccessor(params.extracting.out_props_csv_path, params.extracting.out_prop_name)
-                extracting_execute(params, app_settings, filter_by_column, data_proccessor)
+                mask_results = None
+                if params.extracting.export_and_maks:
+                    mask_results = create_masker(params.masking)
+                extracting_execute(params, app_settings, filter_by_column, data_proccessor, mask_results)
                 if data_proccessor:
                     data_proccessor.finalize()
         except Exception as error:
@@ -218,7 +241,7 @@ def validate_params(params, type):
         message = f'{type} output directory is "{params.output_dir}'
         print(message)
 
-def extracting_execute(params, app_settings, filter_by_column, data_proccessor):
+def extracting_execute(params, app_settings, filter_by_column, data_proccessor, mask_results):
 
     # Assert mandatory files/dirs
     try:
@@ -237,9 +260,10 @@ def extracting_execute(params, app_settings, filter_by_column, data_proccessor):
 
         results = []
         if params.extracting.parallelism_level > 1 :
-            extracting_multithreading_execution(params, app_settings, filter_by_column, data_proccessor)
+            extracting_multithreading_execution(params, app_settings, filter_by_column, data_proccessor, mask_results)
         else:
-            api_resource= Extractor(params.extracting.start_date, params.extracting.end_date, 0, app_settings, filter_by_column=filter_by_column, data_proccessor=data_proccessor)
+            api_resource= Extractor(params.extracting.start_date, params.extracting.end_date, 0, app_settings, filter_by_column=filter_by_column,
+                                    data_proccessor=data_proccessor, mask_results=mask_results)
             api_resource.api_extract(params)
 
             message = f'Total Added: {api_resource.total_added}, Total Failed Approximated: {api_resource.total_failed}'
@@ -271,7 +295,7 @@ def processing_execute(params, app_settings):
     app_settings.logger.info(f"Created csv file with {data_proccessor.size()} entities")
 
 
-def extracting_multithreading_execution(params, app_settings, filter_by_column, data_proccessor):
+def extracting_multithreading_execution(params, app_settings, filter_by_column, data_proccessor, mask_results):
 
     thread_list = list()
     total_period = params.extracting.end_date - params.extracting.start_date
@@ -286,7 +310,8 @@ def extracting_multithreading_execution(params, app_settings, filter_by_column, 
         thread_params.extracting.end_date = batch_end_date
         thread_params.extracting.thread_id = thread_id
 
-        resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)), filter_by_column=filter_by_column, data_proccessor=data_proccessor)
+        resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)), filter_by_column=filter_by_column,
+                                         data_proccessor=data_proccessor,mask_results=mask_results)
 
         batch_start_date = batch_start_date + timedelta(seconds=single_period)
         batch_end_date = batch_end_date + timedelta(seconds=single_period)
@@ -495,6 +520,7 @@ def params_initialize():
     params.extracting.id_list_path = ''
     params.extracting.id_field_name = 'sys_id'
     params.extracting.data_id_name = ''
+    params.extracting.export_and_maks = False
 
     params.extracting.out_props_csv_path = ''
     params.extracting.out_prop_name = 'documentkey'

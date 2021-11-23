@@ -1,6 +1,7 @@
 import os
 import json
 import re
+import pandas as pd
 
 from pandas import read_csv, DataFrame
 from src import settings
@@ -236,4 +237,39 @@ class TextCleaner:
         x = self.__custom_tokens.sub(' <#User> ', x)
         x = self.__space.sub(' ', x)
         return x.strip()
+
+class Masker:
+    def __init__(self, cleaner, mapping_file, custom_tokens_filename_list, anonymize_value):
+        self.cleaner = cleaner
+        self.mapping_file = mapping_file
+        self.custom_tokens_filename_list = custom_tokens_filename_list
+        self.methods = {'ANONYMIZE': anonymize_value}
+
+    def __call__(self, items):
+        if not items:
+            return items
+
+        mapping_file = self.mapping_file
+        custom_tokens_filename_list = self.custom_tokens_filename_list
+        cleaner = self.cleaner
+        output_data = pd.json_normalize(items)
+        methods = self.methods
+        for column in output_data:
+            message = f'Column: {column} | Start", end=" | '
+            print(message)
+
+            method = None
+
+            if mapping_file.filename != '' and \
+                    mapping_file.data is not None and \
+                    column in mapping_file.data['column'].to_list() and \
+                    mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
+
+                method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
+
+            if 'ANONYMIZE' in methods and method == methods['ANONYMIZE'] and  custom_tokens_filename_list:
+                output_data[column] = output_data[column].fillna('')
+                output_data[column] = cleaner.transform(output_data[column].values.tolist())
+        
+        return output_data.to_dict(orient="records")
 

@@ -1,6 +1,6 @@
 column,method
 idx,2
-sys_id,2
+sys_id,0
 fieldname,2
 sys_created_by,2
 inc_assigned_to,2
@@ -15,3 +15,4 @@ priority,2
 comments,2
 oldvalue,2
 newvalue,2
+documentkey,2
