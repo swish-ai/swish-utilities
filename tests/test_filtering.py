@@ -63,7 +63,35 @@ class FilteringTestCase(TestCase):
         with open("tests/data/output/input_processed.json", 'r') as f:
             jsn = json.load(f)
             for entry in jsn:
-                assert entry['sys_id'] == '<#CG>'
+                assert entry['documentkey'] == '<#CG>'
+
+    def test_real_time_test_mask(self):
+        with open('tests/data/sys_audit.json', 'r') as f:
+            mock_data = f.read()
+
+        assert not os.path.isfile(
+            UNITEST_OUTPUT_FILE), "The file should be deleted"
+        
+        
+
+        mock_session = requests_mock.Mocker()
+        mock_session.register_uri(requests_mock.ANY,
+                                  'https://dev71074.service-now.com/api/now/table/sys_audit',
+                                  text=mock_data)
+        mock_session.start()
+
+        args = ["--extract", "--export_and_maks", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
+                "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--mapping_path", "tests/data/mapping_file.csv",
+                "--custom_token_dir", "tests/data/custom"]
+        main(args)
+
+
+        assert os.path.isfile(UNITEST_OUTPUT_FILE)
+        with open(UNITEST_OUTPUT_FILE, 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                assert entry['documentkey'] == '<#CG>'
 
     def test_filtering_wiht_user_admin(self):
 

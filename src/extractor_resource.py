@@ -9,7 +9,7 @@ import getpass
 
 
 class Extractor:
-    def __init__(self, start_date, end_date, thread_id, app_settings=None, filter_by_column=None, data_proccessor=None):
+    def __init__(self, start_date, end_date, thread_id, app_settings=None, filter_by_column=None, data_proccessor=None, mask_results=None):
 
         self.settings = app_settings
         self.session = requests.Session()
@@ -29,6 +29,7 @@ class Extractor:
         self.end_date = end_date
         self.thread_id = thread_id
         self.filter_by_column = filter_by_column
+        self.mask_results = mask_results
         self.data_proccessor = data_proccessor
 
 
@@ -128,6 +129,8 @@ class Extractor:
                 results = self.filter_by_column(results) if self.filter_by_column is not None else results
                 if self.data_proccessor:
                     self.data_proccessor(results)
+                
+                results = self.mask_results(results) if self.mask_results is not None else results
 
                 filtered_len = res_len - len(results)
                 self.settings.logger.info(f'Filtered out {filtered_len} of {res_len}')
