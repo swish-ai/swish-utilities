@@ -1,3 +1,4 @@
+import click
 import requests
 import datetime
 import os
@@ -141,7 +142,7 @@ class Extractor:
 
                 message = f'Added: {self.response_size}. (Total Added: {self.total_added}, Total Failed Approximated: {self.total_failed}), Response Time: {response_time} s'
                 self.settings.logger.info(message)
-                print(message)
+                click.echo(click.style(message, fg="green", underline=True))
 
                 if len(self.total_results) >= params.extracting.file_limit:
                     message = 'File Split'
@@ -159,7 +160,8 @@ class Extractor:
                 raise Exception(message)
 
         except Exception as error:
-
+            import traceback
+            print(traceback.format_exc())
             if trial_number < self.maximum_trials_number:
                 message = f"Error: Failed fetching from API. Trial: {trial_number} . Info: {error}"
                 self.settings.logger.error(message)
