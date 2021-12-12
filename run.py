@@ -40,7 +40,7 @@ def print_version(ctx, param, value):
     click.echo('version 1.0')
     ctx.exit()
 
-# Put new commands here v
+# Put new parameters here v
 @click.command()
 @dip_option('--mask', '-m', is_flag=True, help=Help.mask, ns='masking', initial=mask_data)
 @dip_option('--extract', '-z', is_flag=True, help=Help.extract, ns="extracting")
@@ -76,10 +76,12 @@ def print_version(ctx, param, value):
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
+@click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
 def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
     params = setup_cli(**kwargs)
     start = time()
+    print(json.dumps(kwargs, default=str))
     exec(params)
     elapsed = (time() - start)
     click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
@@ -250,7 +252,6 @@ def extracting_multithreading_execution(params, app_settings, filter_by_column, 
     message = f'Total Added: {total_added}, Total Failed Approximated: {total_failed}'
     app_settings.logger.info(message)
     click.echo(message)
-
 
 
 def masking_execute(params, app_settings):

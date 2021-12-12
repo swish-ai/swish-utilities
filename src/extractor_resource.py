@@ -1,4 +1,6 @@
 import click
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
 import requests
 import datetime
 import os
@@ -7,6 +9,7 @@ from zipfile import ZipFile
 from time import time
 from requests.auth import HTTPBasicAuth
 import getpass
+from string import Template
 
 
 class Extractor:
@@ -60,6 +63,11 @@ class Extractor:
 
             batch_start_date = self.start_date
             batch_end_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
+            formated_url = Template(params.extracting.url).safe_substitute({
+                'start_date': f'{batch_start_date}',
+                'end_date': f'{batch_end_date}',
+            })
+            use_user_url = formated_url != params.extracting.url
             while self.total_added < params.extracting.stop_limit and batch_start_date < batch_end_date:
 
                 if batch_end_date >= self.end_date:
@@ -69,8 +77,18 @@ class Extractor:
                 self.offset = 0
 
                 while self.response_size >= params.extracting.batch_size and self.total_added < params.extracting.stop_limit:
-                    url = params.extracting.url
-                    url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+
+                    if use_user_url:
+                        self.settings.logger.info('Going to use user url')
+                        url = Template(params.extracting.url).safe_substitute({
+                            'start_date': f'{batch_start_date}',
+                            'end_date': f'{batch_end_date}',
+                        })
+                        url += '&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+                    else:
+                        url = params.extracting.url
+                        url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+
                     message = f'Thread: {self.thread_id}, URL: {url}'
                     print(message)
                     self.settings.logger.info(message)
