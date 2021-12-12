@@ -1,4 +1,5 @@
 import click
+import re
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
 import requests
@@ -195,7 +196,19 @@ class Extractor:
 
     
     def get_output_filename(self, params):
-        return os.path.join(params.extracting.output_dir,'output_' + self.settings.reset_timestamp() +
+        prefix = 'output_'
+        try:
+            parsed_url = urlparse(params.extracting.url)
+            prefix = parsed_url.path.rsplit('/', 1)[1]
+            query = parsed_url.query
+            tn = 'tablename'
+            if tn in query:
+                part=parsed_url.query[parsed_url.query.index(tn) + len(tn):]
+                entity = re.findall(r'\w+', part)[0]
+                prefix = f'{prefix}_{entity}_'
+        except Exception as e:
+            self.settings.logger.info(f'Failed parsing {params.extracting.url} using {prefix}')
+        return os.path.join(params.extracting.output_dir, prefix + self.settings.reset_timestamp() +
                             '_' + str(self.thread_id))
 
     def save_data_to_file(self, results, params):
