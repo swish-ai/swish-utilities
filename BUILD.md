@@ -1,11 +1,11 @@
-# HOW To Build dc-utilities
+# HOW To Build swish-utilities
 
 ## Build and release using Github Actions CI
 - [.github/workflows/build-release.yaml](.github/workflows/build-release.yaml) is [Github Action](https://docs.github.com/en/actions) to build and release for Windows, Linux and MacOS
 - we use [GitVersion](https://gitversion.net/docs/) for automatic versioning with [mainline mode](https://gitversion.net/docs/reference/modes/mainline)
 
 ### Viewing Build Status and Logs
-See [multi-utility Github Actions](https://github.com/swish-ai/multi-utility/actions)
+See [swish-utilities Github Actions](https://github.com/swish-ai/swish-utilities/actions)
 
 ### Automatic Build Triggers
 by default only "master" branch push triggers Release Action  
@@ -41,7 +41,7 @@ pip3 install -r requirements.txt
 pyinstaller --clean --onefile \
     --exclude-module matplotlib --exclude-module tkinter --exclude-module qt5 \
     --exclude-module python-dateutil --exclude-module pyinstaller --exclude-module tests \
-    run.py -n dc-utilities
+    run.py -n swish-utilities
 ```
 
 ## references

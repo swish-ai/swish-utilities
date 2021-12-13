@@ -3,13 +3,7 @@
 ##
 name: Build and Release
 on:
-  workflow_dispatch:
-    inputs:    
-      increaseVersion:
-        description: 'increase version - yes/no' 
-        default: "yes"
-      # deployTo:
-      #   description: 'comma separated list of envs to deploy'
+  workflow_dispatch: {}
   push:
     branches: ['*']
     tags-ignore:
@@ -58,7 +52,7 @@ jobs:
       uses: ./.github/actions/build-pyinstaller
       with:
         sourcename: run.py
-        distname: dc-utilities
+        distname: swish-utilities
         os: linux
         version: "${{ needs.set_version.outputs.gitversion }}"
 
@@ -75,7 +69,7 @@ jobs:
       uses: ./.github/actions/build-pyinstaller
       with:
         sourcename: run.py
-        distname: dc-utilities.exe
+        distname: swish-utilities.exe
         os: windows
         version: ${{ needs.set_version.outputs.gitversion }}
 
@@ -92,7 +86,7 @@ jobs:
       uses: ./.github/actions/build-pyinstaller
       with:
         sourcename: run.py
-        distname: dc-utilities
+        distname: swish-utilities
         os: MacOS
         version: ${{ needs.set_version.outputs.gitversion }}
 
