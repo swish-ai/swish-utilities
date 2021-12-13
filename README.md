@@ -6,3 +6,6 @@
 
 ## Usage
 see `dc-utilites --help`
+
+## Build
+see [BUILD.md](BUILD.md)

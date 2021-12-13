@@ -1,7 +1,7 @@
 # HOW To Build dc-utilities
 
 ## Build and release using Github Actions CI
-- [.github/workflows/build-release.yaml] is [Github Action](https://docs.github.com/en/actions) to build and release for Windows, Linux and MacOS
+- [.github/workflows/build-release.yaml](.github/workflows/build-release.yaml) is [Github Action](https://docs.github.com/en/actions) to build and release for Windows, Linux and MacOS
 - we use [GitVersion](https://gitversion.net/docs/) for automatic versioning with [mainline mode](https://gitversion.net/docs/reference/modes/mainline)
 
 ### Viewing Build Status and Logs
