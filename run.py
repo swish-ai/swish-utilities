@@ -17,7 +17,10 @@ from src.file import File
 from pandas import read_csv, read_excel, DataFrame
 from src.cleaner import Masker, TextCleaner, CustomUserFile
 from time import time
-
+try:
+    from version import VERSION
+except: #NOSONAR
+    VERSION = 'dev'
 
 
 # ENUMS
@@ -26,26 +29,27 @@ ANONYMIZE: int = 2
 NONE_ACTION: int = 3
 
 mask_data = {'data': (SimpleNamespace(
-    user_selected_file_list = {},
-    custom_tokens_filename_list = [],
-    file_objects = [],
-    mapping_file_objects = [],
-    file_counter = 0,
-    chunk_size = 50
+    user_selected_file_list={},
+    custom_tokens_filename_list=[],
+    file_objects=[],
+    mapping_file_objects=[],
+    file_counter=0,
+    chunk_size=50
 ))}
+
 
 def print_version(ctx, param, value):
     if not value or ctx.resilient_parsing:
         return
-    click.echo('version 1.0')
+    click.echo(VERSION)
     ctx.exit()
+
 
 # Put new parameters here v
 @click.command()
 @dip_option('--mask', '-m', is_flag=True, help=Help.mask, ns='masking', initial=mask_data)
 @dip_option('--extract', '-z', is_flag=True, help=Help.extract, ns="extracting")
 @dip_option('--proccess', '-w', is_flag=True, help=Help.proccess, ns="processing")
-
 @dip_option('--stop_limit', '-l', help=Help.stop_limit, default=1000000000, groups=['extracting'])
 @dip_option('--file_limit', '-f', help=Help.file_limit, default=1000000, groups=['extracting'])
 @dip_option('--interval', '-i', help=Help.interval, default=24, groups=['extracting'])
@@ -56,23 +60,25 @@ def print_version(ctx, param, value):
 @dip_option('--compress', '-c', help=Help.compress, default=False, groups=['extracting', 'masking'])
 @dip_option('--username', '-u', help=Help.username, default=None, groups=['extracting'])
 @dip_option('--password', '-p', help=Help.password, default='', groups=['extracting'])
-@dip_option('--start_date', '-s', help=Help.start_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]), groups=['extracting'])
-@dip_option('--end_date', '-e', help=Help.end_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]), groups=['extracting'])
+@dip_option('--start_date', '-s', help=Help.start_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
+            groups=['extracting'])
+@dip_option('--end_date', '-e', help=Help.end_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
+            groups=['extracting'])
 @dip_option('--url', '-j', help=Help.url, default=None, groups=['extracting'])
 @dip_option('--id_list_path', '-q', help=Help.id_list_path, default='', groups=['extracting'])
 @dip_option('--id_field_name', '-r', help=Help.id_field_name, default='sys_id', groups=['extracting'])
 @dip_option('--data_id_name', '-d', help=Help.data_id_name, default='', groups=['extracting'])
 @dip_option('--export_and_mask', '-em', help=Help.export_and_mask, is_flag=True, groups=['extracting'])
-@dip_option('--output_dir', '-od', help=Help.output_dir, default='', groups=['extracting', 'masking'])
-@dip_option('--out_prop_name', '-o', help=Help.out_prop_name, default='documentkey', groups=['extracting', 'processing'])
-
+@dip_option('--output_dir', '-od', help=Help.output_dir, default='extracting_output', groups=['extracting', 'masking'])
+@dip_option('--out_prop_name', '-o', help=Help.out_prop_name, default='documentkey',
+            groups=['extracting', 'processing'])
 @dip_option('--input_dir', '-id', help=Help.input_dir, default=None, groups=['masking'])
 @dip_option('--mapping_path', '-mp', help=Help.mapping_path, default=None, groups=['masking'])
 @dip_option('--custom_token_dir', '-ct', help=Help.custom_token_dir, default='', groups=['masking'])
 @dip_option('--important_token_file', '-it', help=Help.important_token_file, default=None, groups=['masking'])
-
 @dip_option('--input_sources', '-is', help=Help.input_sources, default='', groups=['processing'])
-@dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='', groups=['extracting', 'processing'])
+@dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
+            groups=['extracting', 'processing'])
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
@@ -81,11 +87,10 @@ def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
     params = setup_cli(**kwargs)
     start = time()
-    print(json.dumps(kwargs, default=str))
     exec(params)
     elapsed = (time() - start)
     click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
-    
+
 
 def exec_extracting(params, app_settings):
     try:
@@ -93,10 +98,12 @@ def exec_extracting(params, app_settings):
             filter_by_column = None
             if params.extracting.id_list_path:
                 ids_file = cli_file_read(params.extracting.id_list_path)
-                filter_by_column = ColumnFilter(ids_file.data, params.extracting.id_field_name, params.extracting.data_id_name)
+                filter_by_column = ColumnFilter(ids_file.data, params.extracting.id_field_name,
+                                                params.extracting.data_id_name)
             data_proccessor = None
             if params.extracting.out_props_csv_path:
-                data_proccessor = DefaultDataProccessor(params.extracting.out_props_csv_path, params.extracting.out_prop_name)
+                data_proccessor = DefaultDataProccessor(params.extracting.out_props_csv_path,
+                                                        params.extracting.out_prop_name)
             mask_results = None
             if params.extracting.export_and_mask:
                 mask_results = create_masker(params.masking)
@@ -105,6 +112,7 @@ def exec_extracting(params, app_settings):
                 data_proccessor.finalize()
     except Exception as error:
         raise DipException(f'Extracting error, {error}')
+
 
 def exec(params):
     app_settings = Settings('base')
@@ -119,14 +127,14 @@ def exec(params):
             if params.masking.enabled:
                 masking_execute(params.masking, app_settings)
         except Exception as error:
+            click.echo(click.style("Error", fg="red") + f"{error}")
             raise DipException(f'Masking error, {error}')
-        
+
         try:
             if params.processing.enabled:
                 processing_execute(params, app_settings)
         except Exception as error:
             raise DipException(f'Processing error, {error}')
-
 
     except Exception as error:
         message = f'Execution Error: {error}'
@@ -147,9 +155,12 @@ def create_masker(mapping_params):
     directory = mapping_params.custom_token_dir
     custom_tokens_filename_list = []
     if directory and os.path.isdir(directory):
-        custom_tokens_filename_list = [os.path.join(custom_token_dir, f) for f in os.listdir(custom_token_dir) if os.path.isfile(os.path.join(custom_token_dir, f))]
-    
-    assert mapping_params.mapping_path and os.path.isfile(mapping_params.mapping_path), '(--mapping_path) mapping file is not a valid file name'
+        custom_tokens_filename_list = [os.path.join(custom_token_dir, f) for f
+                                       in os.listdir(custom_token_dir)
+                                       if os.path.isfile(os.path.join(custom_token_dir, f))]
+
+    assert mapping_params.mapping_path and os.path.isfile(mapping_params.mapping_path),\
+        '(--mapping_path) mapping file is not a valid file name'
     mapping_file = cli_file_read(mapping_params.mapping_path)
 
     return Masker(cleaner, mapping_file, custom_tokens_filename_list, anonymize_value=ANONYMIZE)
@@ -172,11 +183,12 @@ def extracting_execute(params, app_settings, filter_by_column, data_proccessor, 
         app_settings.logger.info(message)
         click.echo(message)
 
-        if params.extracting.parallelism_level > 1 :
+        if params.extracting.parallelism_level > 1:
             extracting_multithreading_execution(params, app_settings, filter_by_column, data_proccessor, mask_results)
         else:
-            api_resource= Extractor(params.extracting.start_date, params.extracting.end_date, 0, app_settings, filter_by_column=filter_by_column,
-                                    data_proccessor=data_proccessor, mask_results=mask_results)
+            api_resource = Extractor(params.extracting.start_date, params.extracting.end_date, 0,
+                                     app_settings, filter_by_column=filter_by_column,
+                                     data_proccessor=data_proccessor, mask_results=mask_results)
             api_resource.api_extract(params)
 
             message = f'Total Added: {api_resource.total_added}, Total Failed Approximated: {api_resource.total_failed}'
@@ -185,12 +197,13 @@ def extracting_execute(params, app_settings, filter_by_column, data_proccessor, 
 
     except Exception as error:
         message = f'Execution Error: {error}'
-        click.echo(message)
+        click.echo(click.style(message, fg="red", underline=True))
         app_settings.logger.error(message)
 
     message = f'Extracting has FINISHED'
     app_settings.logger.info(message)
     click.echo(message)
+
 
 def processing_execute(params, app_settings):
     if not params.processing.input_sources:
@@ -199,7 +212,6 @@ def processing_execute(params, app_settings):
         else:
             click.echo('Please specify path to directory containing json files')
             raise DipException('Cant find jsons dir or file')
-        
 
     data_proccessor = DefaultDataProccessor(params.processing.out_props_csv_path, params.processing.out_prop_name)
     input_sources = params.processing.input_sources.split(',')
@@ -218,13 +230,14 @@ def extracting_multithreading_execution(params, app_settings, filter_by_column, 
 
     resources = [None] * params.extracting.parallelism_level
     for thread_id in range(params.extracting.parallelism_level):
-        thread_params  = params
+        thread_params = params
         thread_params.extracting.start_date = batch_start_date
         thread_params.extracting.end_date = batch_end_date
         thread_params.extracting.thread_id = thread_id
 
-        resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)), filter_by_column=filter_by_column,
-                                         data_proccessor=data_proccessor,mask_results=mask_results)
+        resources[thread_id] = Extractor(batch_start_date, batch_end_date, thread_id, Settings(str(thread_id)),
+                                         filter_by_column=filter_by_column,
+                                         data_proccessor=data_proccessor, mask_results=mask_results)
 
         batch_start_date = batch_start_date + timedelta(seconds=single_period)
         batch_end_date = batch_end_date + timedelta(seconds=single_period)
@@ -274,7 +287,8 @@ def masking_execute(params, app_settings):
     # Assert and read custom_tokens if exist
     if params.custom_token_dir != '':
         assert os.path.isdir(params.custom_token_dir), 'custom_token_file is not a valid directory name'
-        custom_tokens_filename_list = [f for f in os.listdir(params.custom_token_dir) if os.path.isfile(os.path.join(params.custom_token_dir, f))]
+        custom_tokens_filename_list = [f for f in os.listdir(params.custom_token_dir)
+                                       if os.path.isfile(os.path.join(params.custom_token_dir, f))]
         for f in custom_tokens_filename_list:
             params.data.custom_tokens_filename_list.append(os.path.join(params.custom_token_dir, f))
 
@@ -288,14 +302,9 @@ def masking_execute(params, app_settings):
     # Read input files and execute
     input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     for f in input_files:
-
-        # if f.find('sys_choice') == -1 and f.find('cmn_schedule_span') == -1 and f.find('sys_user_grmember') == -1:
-            input_file = cli_file_read(os.path.join(params.input_dir, f))
-            params.data.file_objects.append(input_file)
-            cli_file_process(input_file, mapping_file, params.data.cleaner, params, app_settings)
-        # else:
-        #     input_file = cli_file_read(os.path.join(params.input_dir, f))
-        #     input_file.save_data_to_file(input_file.data, params.data.destination_folder)
+        input_file = cli_file_read(os.path.join(params.input_dir, f))
+        params.data.file_objects.append(input_file)
+        cli_file_process(input_file, mapping_file, params.data.cleaner, params, app_settings)
 
 
 def cli_file_process(input_file, mapping_file, cleaner, params, app_settings):
@@ -321,7 +330,7 @@ def cli_file_process(input_file, mapping_file, cleaner, params, app_settings):
 
                 method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
 
-                if method == ANONYMIZE and (params.data.custom_tokens_filename_list is not None and params.data.custom_tokens_filename_list != []):
+                if method == ANONYMIZE and (params.data.custom_tokens_filename_list is not None):
                     output_data[column] = output_data[column].fillna('')
                     output_data[column] = cleaner.transform(output_data[column].values.tolist())
 
@@ -373,7 +382,7 @@ def cli_file_read(filename):
             if file_object.ext == 'json':
                 try:
                     # JSON file
-                    f = open(file_object.filename, "r",encoding='utf-8')
+                    f = open(file_object.filename, "r", encoding='utf-8')
                 except Exception:
                     try:
                         f = open(file_object.filename, "r", encoding='latin-1')
@@ -399,11 +408,13 @@ def cli_file_read(filename):
         click.echo(message)
         raise DipException(message)
 
+
 def main(args):
     try:
         cli.main(args)
     except Exception as e:
         click.echo(e)
+
 
 if __name__ == '__main__':
     if len(sys.argv) == 1:

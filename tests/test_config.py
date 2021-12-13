@@ -45,3 +45,28 @@ class FilteringTestCase(TestCase):
         result = runner.invoke(cli, args, catch_exceptions=False)
         print(result.output)
         assert result.exit_code == 0
+    
+    def test_mask_with_config(self):
+        if os.path.isfile("tests/data/output/input_processed.json"):
+            os.remove("tests/data/output/input_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input"]
+        runner = CliRunner()
+        with self.assertRaises(Exception) as context:
+            result = runner.invoke(cli, args, catch_exceptions=False)
+            print(result.output)
+        print(context.exception)
+        self.assertTrue(isinstance(context.exception, DipException))
+
+        args.append('--config')
+        args.append('tests/data/test_config.json')
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_processed.json")
+
+        with open("tests/data/output/input_processed.json", 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                assert entry['documentkey'] == '<#CG>'

@@ -59,8 +59,13 @@ __unitest_output.json
 
 build/
 extracting_output/
+processing_output/
 run.spec
+qwerty.csv
+dock_ids.csv
+dc_utilities_data/
 config.json
 
 # virtualenv
 .pyenv
+

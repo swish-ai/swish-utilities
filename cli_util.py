@@ -1,8 +1,9 @@
 import os
 import click
-from pandas import read_json
+from pandas import DataFrame
 from types import SimpleNamespace
 import json
+import pathlib
 
 GROUPS = {}
 MAIN_GROPUS = {}
@@ -11,10 +12,17 @@ MAP_TO = {}
 ALL_OPTIONS = set()
 DC_UTILITIES_DATA_DIR = './dc_utilities_data'
 DC_UTILITIES_MAPPING_FILE = os.path.join(DC_UTILITIES_DATA_DIR, 'mapping_file.csv')
-CUSTOM_TOKEN_DIR = os.path.join(DC_UTILITIES_DATA_DIR, 'custom_tokens')
+DC_UTILITIES_IMORTANT_TOKEN_FILE = os.path.join(DC_UTILITIES_DATA_DIR, 'important_token_file.txt')
+DC_UTILITIES_CUSTOM_TOKENS_DIR = os.path.join(DC_UTILITIES_DATA_DIR, 'custom_tokens')
+
 
 class DipException(Exception):
     pass
+
+
+class DipAuthException(Exception):
+    pass
+
 
 def dip_option(*param_decls, **attrs):
     """
@@ -41,7 +49,7 @@ def dip_option(*param_decls, **attrs):
         initial = attrs['initial']
         del attrs['initial']
         INITIAL[ns] = initial
-    
+
     map_to = None
     if "map_to" in attrs:
         map_to = attrs['map_to']
@@ -73,14 +81,15 @@ def validate_params(params, type_):
         for key in params.__dict__:
             assert params.__dict__[key] is not None, f'{key} argument is missing'
 
-        if not params.__dict__.__contains__('output_dir'):
+        if 'output_dir' not in params.__dict__:
             directory = f'{type_}_output'
             params.output_dir = os.path.join(os.getcwd(), directory)
-            if not os.path.isdir(params.output_dir):
-                os.mkdir(directory)
+        if not os.path.isdir(params.output_dir):
+            pathlib.Path(params.output_dir).mkdir(parents=True, exist_ok=True)
 
         message = f'{type_} output directory is "{params.output_dir}'
         print(message)
+
 
 def add_group(params, name, values, current_groups, kwargs):
     opt = SimpleNamespace()
@@ -93,13 +102,15 @@ def add_group(params, name, values, current_groups, kwargs):
             setattr(opt, key, val)
     for val in values:
         if kwargs[val] is None and current_groups[name][0]:
-            print(f"Error: --{val} is required with for group option --{current_groups[name][1]}")
-            raise DipException("Input error")
+            msg = f"Error: --{val} is required with for group option --{current_groups[name][1]}"
+            print(msg)
+            raise DipException(msg)
         if (name, val) in MAP_TO:
             setattr(opt, MAP_TO[(name, val)], kwargs[val])
         else:
             setattr(opt, val, kwargs[val])
     validate_params(opt, name)
+
 
 def get_config_params(data):
     if data.get('config'):
@@ -114,23 +125,36 @@ def get_config_params(data):
     else:
         return None
 
+
+def setup_important_token_file(kwargs, config_params):
+    if config_params.get('important_token_file'):
+        kwargs['important_token_file'] = config_params['important_token_file']
+    else:
+        important_tokens = config_params.get('important_tokens')
+        kwargs['important_token_file'] = DC_UTILITIES_IMORTANT_TOKEN_FILE
+        if not os.path.isfile(DC_UTILITIES_IMORTANT_TOKEN_FILE):
+            with open(DC_UTILITIES_IMORTANT_TOKEN_FILE, 'w+') as f:
+                if important_tokens:
+                    f.write('\n'.join(important_tokens))
+                else:
+                    f.write('')
+
+
 def create_masking_files_if_needed(kwargs, config_params):
-    # args = ["--mask", "--output_dir", "tests/data/output", 
-    #             "--input_dir", "tests/data/input",
-    #             "--mapping_path", "tests/data/mapping_file.csv", 
-    #             "--custom_token_dir", "tests/data/custom", 
-    #             "--important_token_file", "tests/data/important_tokens.txt"]
     if 'mask' in kwargs or 'export_and_mask' in kwargs:
+        if not os.path.isdir(DC_UTILITIES_DATA_DIR):
+            os.mkdir(DC_UTILITIES_DATA_DIR)
         if not kwargs.get('mapping_path'):
-            if not os.path.isdir(DC_UTILITIES_DATA_DIR):
-                os.mkdir(DC_UTILITIES_DATA_DIR)
-            df = read_json(config_params['mask_mapping'])
+            df = DataFrame.from_dict(config_params['mask_mapping'])
             df.to_csv(DC_UTILITIES_MAPPING_FILE)
             kwargs['mapping_path'] = DC_UTILITIES_MAPPING_FILE
         if not kwargs.get('important_token_file'):
-            pass
+            setup_important_token_file(kwargs, config_params)
         if not kwargs.get('custom_token_dir'):
-            pass
+            if not os.path.isdir(DC_UTILITIES_CUSTOM_TOKENS_DIR):
+                os.mkdir(DC_UTILITIES_CUSTOM_TOKENS_DIR)
+            kwargs['custom_token_dir'] = DC_UTILITIES_CUSTOM_TOKENS_DIR
+
 
 def load_auth(kwargs):
     auth_file = kwargs.get('auth_file')
@@ -142,9 +166,11 @@ def load_auth(kwargs):
                 kwargs['password'] = jsn['password']
         else:
             raise DipException(f"{auth_file} is not valid file or doesn't exists")
-        
+
+
 def create_data_files_if_needed(kwargs, config_params):
     create_masking_files_if_needed(kwargs, config_params)
+
 
 def setup_cli(**kwargs):
     # set parameters from config but do not overide manually provided values.
@@ -154,11 +180,10 @@ def setup_cli(**kwargs):
             if key in kwargs and not kwargs[key]:
                 kwargs[key] = val
         create_data_files_if_needed(kwargs, config_params)
-    
+
     load_auth(kwargs)
 
-        
-    current_groups = {key:(kwargs[val], val) for key, val in MAIN_GROPUS.items()}
+    current_groups = {key: (kwargs[val], val) for key, val in MAIN_GROPUS.items()}
     params = SimpleNamespace()
     for name, values in GROUPS.items():
         add_group(params, name, values, current_groups, kwargs)

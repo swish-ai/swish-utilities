@@ -12,6 +12,8 @@ from requests.auth import HTTPBasicAuth
 import getpass
 from string import Template
 
+from cli_util import DipAuthException
+
 
 class Extractor:
     def __init__(self, start_date, end_date, thread_id, app_settings=None, filter_by_column=None, data_proccessor=None, mask_results=None):
@@ -98,7 +100,9 @@ class Extractor:
 
                     try:
                         self.handle_api_request(params, url, trial_number)
-
+                    
+                    except DipAuthException as e:
+                        raise e
                     except Exception as error:
 
                         # Trials exceeded for this interval, jump to next interval
@@ -107,7 +111,8 @@ class Extractor:
 
                 batch_start_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
                 batch_end_date = batch_end_date + datetime.timedelta(hours=params.extracting.interval)
-
+        except DipAuthException as e:
+            raise e
         except KeyboardInterrupt:
             message = f'Code Interrupted by User'
             print(message)
@@ -128,9 +133,13 @@ class Extractor:
             self.settings.logger.info(message)
 
     def handle_api_request(self, params, url, trial_number):
+
+        t1 = time()
+        resp = self.session.get(url, headers=params.extracting.headers, auth = params.extracting.auth)
+        if resp.status_code == 401:
+            raise DipAuthException('Authentication failure')
+
         try:
-            t1 = time()
-            resp = self.session.get(url, headers=params.extracting.headers, auth = params.extracting.auth)
             response_time = round(time() - t1, 3)
 
             self.offset += params.extracting.batch_size
