@@ -69,7 +69,7 @@ jobs:
       uses: ./.github/actions/build-pyinstaller
       with:
         sourcename: run.py
-        distname: swish-utilities.exe
+        distname: Swish-Utilities.exe
         os: windows
         version: ${{ needs.set_version.outputs.gitversion }}
 
