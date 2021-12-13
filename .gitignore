@@ -60,6 +60,7 @@ __unitest_output.json
 build/
 extracting_output/
 run.spec
+config.json
 
 # virtualenv
 .pyenv

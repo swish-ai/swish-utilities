@@ -124,7 +124,6 @@ class TextCleaner:
         Cleaner Class
         compiling regexes and custom tokens file.
         """
-        # self._nproc = max(1, min(nproc, cpu_count()-1))
         self._custom_tokens_chunk = None
         self._flashtext_names = KeywordProcessor(case_sensitive=False)
 
@@ -189,7 +188,9 @@ class TextCleaner:
     def get_custom_tokens(self):
         return self.custom_tokens_list
 
-    def clean_custom_tokens_chunk(self, x):
+    def clean_custom_tokens_chunk(self, x, no_clean = False):
+        if no_clean:
+            return x
         x = self._flashtext_names.replace_keywords(x).strip()
         x = self.__special.sub('', x)
         x = self.__ssn.sub('\1 <#SSN> \3', x)
@@ -210,6 +211,19 @@ class TextCleaner:
             print("There was an Error in clean_custom_token_chunk ", e.__str__())
 
         return res
+    
+    def transform_with_condition(self, df, column, conditions):
+        data = df[column].values.tolist()
+        no_clean = [True] * len(data)
+        for condition in conditions:
+            c_column, val = condition
+            val = str(val)
+            c_data = df[c_column].values.tolist()
+            for i , c in enumerate(c_data):
+                if str(c) == val:
+                    no_clean[i] = False
+        return [self.clean_custom_tokens_chunk(x, no_clean[i]) for i, x in enumerate(data)]
+
 
     def is_custom_loaded(self) -> bool:
         return bool(self.__custom_tokens)
@@ -259,17 +273,28 @@ class Masker:
             print(message)
 
             method = None
+            condition = None
 
             if mapping_file.filename != '' and \
                     mapping_file.data is not None and \
                     column in mapping_file.data['column'].to_list() and \
                     mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
 
+                condition = mapping_file.data[mapping_file.data['column'] == column]['condition'].item()
                 method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
-
+            
+            conditions = []
+            if condition and not pd.isna(condition) and condition != 'nan':
+                parts = [p.strip() for p in  condition.split('|') if p.strip()]
+                for part in parts:
+                    conditions.append(part.split('='))
+                    
             if 'ANONYMIZE' in methods and method == methods['ANONYMIZE'] and  custom_tokens_filename_list:
                 output_data[column] = output_data[column].fillna('')
-                output_data[column] = cleaner.transform(output_data[column].values.tolist())
+                if conditions:
+                    output_data[column] = cleaner.transform_with_condition(output_data, column, conditions)
+                else:
+                    output_data[column] = cleaner.transform(output_data[column].values.tolist())
         
         return output_data.to_dict(orient="records")
 

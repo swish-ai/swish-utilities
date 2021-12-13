@@ -2,11 +2,11 @@ import json
 from unittest import TestCase
 from pandas.io.parsers import read_csv
 import requests_mock
-from run import main
-from src.extractor_resource import Extractor
+from run import cli
 from tests.common import SNOW_RESPONSE1, SNOW_RESPONSE_WITH_CUSTOM_ID, UNITEST_OUTPUT_FILE, UNITEST_OUTPUT_FILE_PREFIX, patch_for_tests
 import os
 import os.path
+from click.testing import CliRunner
 
 patch_for_tests()
 
@@ -41,7 +41,10 @@ class FilteringTestCase(TestCase):
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--id_list_path", "tests/data/user_types.csv",
             "--id_field_name", "user", "--parallel", "2"]
         
-        main(args)
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
 
         assert os.path.isfile(UNITEST_OUTPUT_FILE) and os.path.isfile(f'{UNITEST_OUTPUT_FILE_PREFIX}_1.json')
         
@@ -56,7 +59,10 @@ class FilteringTestCase(TestCase):
                 "--mapping_path", "tests/data/mapping_file.csv", 
                 "--custom_token_dir", "tests/data/custom", 
                 "--important_token_file", "tests/data/important_tokens.txt"]
-        main(args)
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
 
         assert os.path.isfile("tests/data/output/input_processed.json")
 
@@ -80,11 +86,13 @@ class FilteringTestCase(TestCase):
                                   text=mock_data)
         mock_session.start()
 
-        args = ["--extract", "--export_and_maks", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
+        args = ["--extract", "--export_and_mask", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--mapping_path", "tests/data/mapping_file.csv",
                 "--custom_token_dir", "tests/data/custom"]
-        main(args)
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        assert result.exit_code == 0
 
 
         assert os.path.isfile(UNITEST_OUTPUT_FILE)
@@ -113,7 +121,10 @@ class FilteringTestCase(TestCase):
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--id_list_path", "tests/data/user_types.csv",
                 "--id_field_name", "user"]
-        main(args)
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
 
 
         assert os.path.isfile(UNITEST_OUTPUT_FILE)
@@ -137,7 +148,10 @@ class FilteringTestCase(TestCase):
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--out_props_csv_path", "dock_ids.csv"]
-        main(args)
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
 
         data = read_csv(f"dock_ids.csv", encoding='utf-8')
         assert len(data['documentkey'].values) == 9, "wrong output count"

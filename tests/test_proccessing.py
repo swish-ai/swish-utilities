@@ -1,8 +1,9 @@
 import json
 from unittest import TestCase
+from click.testing import CliRunner
 from pandas.io.parsers import read_csv
 import requests_mock
-from run import main
+from run import cli, main
 from src.extractor_resource import Extractor
 from tests.common import SNOW_RESPONSE1, SNOW_RESPONSE_WITH_CUSTOM_ID, UNITEST_OUTPUT_FILE, UNITEST_OUTPUT_FILE_PREFIX, patch_for_tests
 import os
@@ -23,11 +24,17 @@ class ProcessingTestCase(TestCase):
     def test_proccessing(self):
         assert not os.path.isfile(OUTPUT_CSV_FILE)
         args = ["--proccess", "--out_props_csv_path", OUTPUT_CSV_FILE, "--out_prop_name", "sys_id"]
-        main(args)
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
         assert os.path.isfile(OUTPUT_CSV_FILE)
     
     def test_proccessing_file(self):
         assert not os.path.isfile(OUTPUT_CSV_FILE)
         args = ["--proccess", "--input_sources", "tests/data/sys_audit.json", "--out_props_csv_path", OUTPUT_CSV_FILE]
-        main(args)
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
         assert os.path.isfile(OUTPUT_CSV_FILE)

@@ -676,14 +676,14 @@
             "fieldname": "short_description",
             "reason": "",
             "sys_id": "819bfa9d874330105fd965f73cbb356b",
-            "newvalue": "test3",
+            "newvalue": "user (078-05-1120) got new value",
             "sys_created_on": "2021-10-06 13:32:13",
             "documentkey": "995bb29d874330105fd965f73cbb3579",
             "internal_checkpoint": "17c55cdf5c90000001",
             "record_checkpoint": "1",
             "tablename": "incident",
             "user": "aes.creator",
-            "oldvalue": "test",
+            "oldvalue": "user (078-05-1120) changed",
             "sys_created_by": "aes.creator"
         },
         {
