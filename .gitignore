@@ -59,4 +59,7 @@ __unitest_output.json
 
 build/
 extracting_output/
+run.spec
 
+# virtualenv
+.pyenv

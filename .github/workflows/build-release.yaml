@@ -1,0 +1,121 @@
+##
+# _common_job_if: &common_job_if  ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
+##
+name: Linux Build
+on:
+  workflow_dispatch:
+    inputs:    
+      increaseVersion:
+        description: 'increase version - yes/no' 
+        default: "yes"
+      # deployTo:
+      #   description: 'comma separated list of envs to deploy'
+  push:
+    branches: ['*']
+    tags-ignore:
+    - build-*
+
+jobs:
+  set_version:
+    if: ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
+    runs-on: ubuntu-latest
+
+    outputs:
+      gitversion: ${{ steps.set-version.outputs.gitversion }}
+
+    steps:
+    - name: Checkout the repo
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v0.9.11
+      with:
+        versionSpec: '5.8.1'
+
+    - name: Determine Version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v0.9.11
+
+    - name: set version
+      id: set-version
+      run: |
+        GITVERSION=${{ steps.gitversion.outputs.fullSemVer }}
+        echo "::set-output name=gitversion::${GITVERSION}"
+        echo "gitversion=${GITVERSION}" | tee -a $GITHUB_ENV
+
+  build_linux:
+    if: ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
+    needs: set_version
+    runs-on: ubuntu-latest
+    outputs:
+      artifact-path: ${{steps.build-pyinstaller.outputs.artifact-path}}
+    steps:
+    - uses: actions/checkout@v2
+    - name: build-pyinstaller
+      id: build-pyinstaller
+      uses: ./.github/actions/build-pyinstaller
+      with:
+        sourcename: run.py
+        distname: dc-utilities
+        os: linux
+        version: "${{ needs.set_version.outputs.gitversion }}"
+
+  build_windows:
+    if: ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
+    needs: set_version
+    runs-on: windows-latest
+    outputs:
+      artifact-path: ${{ steps.build-pyinstaller.outputs.artifact-path}}
+    steps:
+    - uses: actions/checkout@v2
+    - name: build-pyinstaller
+      id: build-pyinstaller
+      uses: ./.github/actions/build-pyinstaller
+      with:
+        sourcename: run.py
+        distname: dc-utilities.exe
+        os: windows
+        version: ${{ needs.set_version.outputs.gitversion }}
+
+  build_macos:
+    if: ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
+    needs: set_version
+    runs-on: macos-latest
+    outputs:
+      artifact-path: ${{ steps.build-pyinstaller.outputs.artifact-path}}
+    steps:
+    - uses: actions/checkout@v2
+    - name: build-pyinstaller
+      id: build-pyinstaller
+      uses: ./.github/actions/build-pyinstaller
+      with:
+        sourcename: run.py
+        distname: dc-utilities
+        os: MacOS
+        version: ${{ needs.set_version.outputs.gitversion }}
+
+  release_artifacts:
+    if: ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
+    needs: ["set_version", "build_linux", "build_windows", "build_macos"]
+    runs-on: ubuntu-latest
+    steps:
+    - name: download artifacts
+      id: download-artifacts
+      uses: actions/download-artifact@v2
+      with:
+        path: artifacts
+    
+    - name: Display structure of downloaded files
+      run: ls -lR ${{steps.download-artifacts.outputs.download-path}}
+    
+    - name: Release
+      uses: softprops/action-gh-release@v1
+      # if: startsWith(github.ref, 'refs/tags/')
+      with:
+        tag_name: ${{ needs.set_version.outputs.gitversion }}
+        files: |
+          ${{steps.download-artifacts.outputs.download-path}}/${{needs.build_linux.outputs.artifact-path}}
+          ${{steps.download-artifacts.outputs.download-path}}/${{needs.build_windows.outputs.artifact-path}}
+          ${{steps.download-artifacts.outputs.download-path}}/${{needs.build_macos.outputs.artifact-path}}
