@@ -21,10 +21,10 @@ new-feature
 git commit -am "added supercode and I want #build"
 git push
 ```
-It will create "v<versoion>-<branch-name>" release
+It will create a release named `<version>-<branch-name>.<commit-number>`
 
 ### Manually Promoting major|minor|patch versions
-add "+semver major|minor|patch" to the commit message:
+add "+semver major|minor" to the commit message:
 ```
 git commit -am "#build +semver: minor -- it is a big feature"
 ```
