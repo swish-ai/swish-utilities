@@ -7,11 +7,17 @@
 node_modules/
 dist/
 
+# VSCode settings
+.vscode
+
 # Compiled Java class files
 *.class
 
 # Compiled Python bytecode
 *.py[cod]
+
+# Python virtual env
+venv/
 
 # Log files
 *.log
@@ -47,4 +53,19 @@ Thumbs.db
 *.flv
 *.mov
 *.wmv
+
+# Unitest output
+__unitest_output.json
+
+build/
+extracting_output/
+processing_output/
+run.spec
+qwerty.csv
+dock_ids.csv
+dc_utilities_data/
+config.json
+
+# virtualenv
+.pyenv
 

@@ -1,0 +1,67 @@
+name: build-pyinstaller
+description: build-pyinstaller
+inputs:
+  sourcename: 
+    description: 'source file to build'
+    required: true
+  distname:
+    description: 'dist file to save'
+    required: true  
+  os:  # id of input
+    description: 'Operating system'
+    required: true
+  version:  # id of input
+    required: true
+outputs:
+  artifact-name:
+    description: "Artifact Name"
+    value: ${{ steps.set-names.outputs.artifact-name }}
+  artifact-file:
+    description: "Artifact File"
+    value: ${{ steps.set-names.outputs.artifact-file }}
+  artifact-path:
+    description: "Artifact Path"
+    value: ${{ steps.set-names.outputs.artifact-name }}/${{ steps.set-names.outputs.artifact-file }}
+runs:
+  using: "composite"
+  steps:
+    # - name: Checkout the repo
+    #   uses: actions/checkout@v2
+
+    - name: python build
+      shell: bash
+      run: |
+        echo "VERSION='${{ inputs.version }}'" > version.py
+        pip3 install -r requirements.txt
+        pip3 install pyinstaller
+        pyinstaller --clean --onefile \
+          --exclude-module matplotlib --exclude-module tkinter --exclude-module qt5 --exclude-module python-dateutil --exclude-module pyinstaller --exclude-module tests \
+          ${{ inputs.sourcename }} -n ${{ inputs.distname }}
+        ls -l dist/
+        
+
+    - name: set-names
+      id: set-names
+      shell: bash
+      run: |
+        ARTIFACT_NAME=${{ inputs.version }}-${{ inputs.os }}
+        echo "artifact_name=${ARTIFACT_NAME}" | tee -a $GITHUB_ENV
+        echo "::set-output name=artifact-name::${ARTIFACT_NAME}"
+        ARTIFACT_FILE="$(basename dist/${{ inputs.distname }} | sed 's/\(.*\)\..*/\1/')"-v${{ inputs.version }}-${{ inputs.os }}.zip
+        echo "artifact_file=${ARTIFACT_FILE}" | tee -a $GITHUB_ENV
+        echo "::set-output name=artifact-file::${ARTIFACT_FILE}"
+        if [[ "${{ inputs.os }}" == "windows" ]]; then
+          echo "Archiving by powershell"
+          powershell Compress-Archive -Path dist/${{ inputs.distname }} -DestinationPath ${ARTIFACT_FILE}
+        else
+          echo "Archiving by zip"
+          zip -v ${ARTIFACT_FILE} -j dist/${{ inputs.distname }}
+        fi
+    
+    - name: upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.artifact_name }}
+        path: |
+          ${{ env.artifact_file }}
+        retention-days: 1

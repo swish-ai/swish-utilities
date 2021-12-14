@@ -1,0 +1,4 @@
+column,method,condition
+oldvalue,2,fieldname=short_description|fieldname=fieldname
+newvalue,2,
+documentkey,2,

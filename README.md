@@ -1,29 +1,11 @@
-# README #
+# Swish Utilities #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+## How To Install
+- Download `swish-utilities-v<version>-<windows|linux|MacOS>.zip` for your OS from [Releases](https://github.com/swish-ai/swish-utilities/releases)
+- unzip and put executable to the path
 
-### What is this repository for? ###
+## Usage
+see `swish-utilites --help`
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
-
-### How do I get set up? ###
-
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
-
-### Contribution guidelines ###
-
-* Writing tests
-* Code review
-* Other guidelines
-
-### Who do I talk to? ###
-
-* Repo owner or admin
-* Other community or team contact
+## Build
+see [BUILD.md](BUILD.md)
