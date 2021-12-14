@@ -1,3 +1,7 @@
+import click
+import re
+from urllib.parse import urlparse
+from urllib.parse import parse_qs
 import requests
 import datetime
 import os
@@ -6,6 +10,9 @@ from zipfile import ZipFile
 from time import time
 from requests.auth import HTTPBasicAuth
 import getpass
+from string import Template
+
+from cli_util import DipAuthException
 
 
 class Extractor:
@@ -59,6 +66,11 @@ class Extractor:
 
             batch_start_date = self.start_date
             batch_end_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
+            formated_url = Template(params.extracting.url).safe_substitute({
+                'start_date': f'{batch_start_date}',
+                'end_date': f'{batch_end_date}',
+            })
+            use_user_url = formated_url != params.extracting.url
             while self.total_added < params.extracting.stop_limit and batch_start_date < batch_end_date:
 
                 if batch_end_date >= self.end_date:
@@ -68,8 +80,18 @@ class Extractor:
                 self.offset = 0
 
                 while self.response_size >= params.extracting.batch_size and self.total_added < params.extracting.stop_limit:
-                    url = params.extracting.url
-                    url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+
+                    if use_user_url:
+                        self.settings.logger.info('Going to use user url')
+                        url = Template(params.extracting.url).safe_substitute({
+                            'start_date': f'{batch_start_date}',
+                            'end_date': f'{batch_end_date}',
+                        })
+                        url += '&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+                    else:
+                        url = params.extracting.url
+                        url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+
                     message = f'Thread: {self.thread_id}, URL: {url}'
                     print(message)
                     self.settings.logger.info(message)
@@ -78,7 +100,9 @@ class Extractor:
 
                     try:
                         self.handle_api_request(params, url, trial_number)
-
+                    
+                    except DipAuthException as e:
+                        raise e
                     except Exception as error:
 
                         # Trials exceeded for this interval, jump to next interval
@@ -87,7 +111,8 @@ class Extractor:
 
                 batch_start_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
                 batch_end_date = batch_end_date + datetime.timedelta(hours=params.extracting.interval)
-
+        except DipAuthException as e:
+            raise e
         except KeyboardInterrupt:
             message = f'Code Interrupted by User'
             print(message)
@@ -108,9 +133,13 @@ class Extractor:
             self.settings.logger.info(message)
 
     def handle_api_request(self, params, url, trial_number):
+
+        t1 = time()
+        resp = self.session.get(url, headers=params.extracting.headers, auth = params.extracting.auth)
+        if resp.status_code == 401:
+            raise DipAuthException('Authentication failure')
+
         try:
-            t1 = time()
-            resp = self.session.get(url, headers=params.extracting.headers, auth = params.extracting.auth)
             response_time = round(time() - t1, 3)
 
             self.offset += params.extracting.batch_size
@@ -141,7 +170,7 @@ class Extractor:
 
                 message = f'Added: {self.response_size}. (Total Added: {self.total_added}, Total Failed Approximated: {self.total_failed}), Response Time: {response_time} s'
                 self.settings.logger.info(message)
-                print(message)
+                click.echo(click.style(message, fg="green", underline=True))
 
                 if len(self.total_results) >= params.extracting.file_limit:
                     message = 'File Split'
@@ -159,7 +188,8 @@ class Extractor:
                 raise Exception(message)
 
         except Exception as error:
-
+            import traceback
+            print(traceback.format_exc())
             if trial_number < self.maximum_trials_number:
                 message = f"Error: Failed fetching from API. Trial: {trial_number} . Info: {error}"
                 self.settings.logger.error(message)
@@ -175,7 +205,19 @@ class Extractor:
 
     
     def get_output_filename(self, params):
-        return os.path.join(params.extracting.output_dir,'output_' + self.settings.reset_timestamp() +
+        prefix = 'output_'
+        try:
+            parsed_url = urlparse(params.extracting.url)
+            prefix = parsed_url.path.rsplit('/', 1)[1]
+            query = parsed_url.query
+            tn = 'tablename'
+            if tn in query:
+                part=parsed_url.query[parsed_url.query.index(tn) + len(tn):]
+                entity = re.findall(r'\w+', part)[0]
+                prefix = f'{prefix}_{entity}_'
+        except Exception as e:
+            self.settings.logger.info(f'Failed parsing {params.extracting.url} using {prefix}')
+        return os.path.join(params.extracting.output_dir, prefix + self.settings.reset_timestamp() +
                             '_' + str(self.thread_id))
 
     def save_data_to_file(self, results, params):
