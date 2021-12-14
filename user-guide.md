@@ -1,10 +1,10 @@
 ﻿
-`                                                                                                                                                                                            `swish-utilities User Guide
+`                                                                                                                                                                                            `**swish-utilities User Guide**
 
 \_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_\_
 
 
-Deep Coding Utilities for ServiceNow data retrieval (swish-utilities)
+Swish Utilities for ServiceNow data retrieval (swish-utilities)
 
 
 Introduction
@@ -32,9 +32,7 @@ For a more detailed list, see the *Extracting ServiceNow Data* document.
 
 
 
-**
-
-Pre-Requisites**  
+**Pre-Requisites**  
 
 - The latest swish-utilities product should be downloaded. 
 - swish-utilities can be executed only on Windows machines.
@@ -117,11 +115,8 @@ swish-utilities  “--extract” "--url" ""https://SERVICENOW_HOST_NAME/api/now/
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-
 “ --start\_date" "2019-04-18" 
-
 "--end\_date" "2021-04-22" 
-
 "--interval" "24"
 
 **Extraction of Sys\_Audit with creation of csv file of documentkeys set** 
@@ -129,13 +124,9 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-
 “ --start\_date" "2019-04-18" 
-
 "--end\_date" "2021-04-22" 
-
 "--interval" "24"
-
 "--out\_props\_csv\_path" "documentkeys.csv"
 
 **Extraction of Sys\_Audit with filtering by sys\_id** 
@@ -143,11 +134,8 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-
 “ --start\_date" "2019-04-18" 
-
 "--end\_date" "2021-04-22"
-
 "--id\_list\_path" "sys\_ids\_list.csv"
 
 **Extraction of Sys\_Audit with filtering by provided field** 
@@ -155,13 +143,9 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-
 “ --start\_date" "2019-04-18" 
-
 "--end\_date" "2021-04-22"
-
 "--id\_list\_path" "fieldname\_ids.csv"
-
 "--id\_field\_name" "fieldname"
 
 
@@ -171,11 +155,8 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-
 “ --start\_date" "2019-04-18" 
-
 "--end\_date" "2021-04-22" 
-
 "--interval" "24"
 
 **“--parallel” “2”**
@@ -185,22 +166,16 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
-"--batch\_size" "10000" "--file\_limit" "50000" 
-
+"--batch\_size" "10000" "--file\_limit" "50000"
 “ --start\_date" "2019-04-18" 
-
 "--end\_date" "2021-04-22" 
-
 "--interval" "24"
-
 “--parallel” “2”
-
 **“--mask”
 ""**  **“custom\_folder"**
-
 **"--mapping\_path"  "mapping\_file.csv"**
-
 **"--important\_token\_file" --custom\_token\_dir “important\_tokens.txt"**
+
 
 **Extract single column csv file from downloaded json:**
 
@@ -239,7 +214,10 @@ Manager
 Will
 
 Admin
+
 (Newline delimiter)
+
+
 
 
 **Custom token file - structure and example**
