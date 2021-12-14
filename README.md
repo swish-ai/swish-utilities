@@ -7,5 +7,8 @@
 ## Usage
 see `swish-utilites --help`
 
+## User guide
+see [user-guide.md](user-guide.md)
+
 ## Build
 see [BUILD.md](BUILD.md)
