@@ -27,6 +27,7 @@ jobs:
           -Dsonar.sources=/github/workflow -Dsonar.projectKey=swish-utilities-gh \
           -Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=300
 
+    # https://github.com/marketplace/actions/slack-notify
     - name: Slack Notification
       if: ${{ failure() }}
       uses: rtCamp/action-slack-notify@v2
@@ -36,7 +37,8 @@ jobs:
         SLACK_USERNAME: "github-actions"
         SLACK_TITLE: Sonarqube Check Failed - swish-utilities
         SLACK_COLOR: ${{ job.status }}
-        SLACK_MESSAGE: Sonarqube Check Failed - see ${{ secrets.SONAR_HOST_URL }}/dashboard?id=swish-utilities-gh 
+        SLACK_ICON_EMOJI: ":woman-raising-hand:"
+        SLACK_MESSAGE: see ${{ secrets.SONAR_HOST_URL }}/dashboard?id=swish-utilities-gh
 
 
   set_version:
