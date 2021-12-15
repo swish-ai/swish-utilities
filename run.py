@@ -19,13 +19,13 @@ from src.cleaner import Masker, TextCleaner, CustomUserFile
 from time import time
 try:
     from version import VERSION
-except: #NOSONAR
+except:  # NOSONAR
     VERSION = 'dev'
 
 
 # ENUMS
-MASK: int = 1
-ANONYMIZE: int = 2
+MASK: int = 2
+ANONYMIZE: int = 1
 NONE_ACTION: int = 3
 
 mask_data = {'data': (SimpleNamespace(
@@ -52,7 +52,8 @@ def print_version(ctx, param, value):
 @dip_option('--proccess', '-w', is_flag=True, help=Help.proccess, ns="processing")
 @dip_option('--stop_limit', '-l', help=Help.stop_limit, default=1000000000, groups=['extracting'])
 @dip_option('--file_limit', '-f', help=Help.file_limit, default=1000000, groups=['extracting'])
-@dip_option('--interval', '-i', help=Help.interval, default=24, groups=['extracting'])
+@dip_option('--interval', '-i', type=click.IntRange(1, sys.maxsize),
+            help=Help.interval, default=24, groups=['extracting'])
 @dip_option('--batch_size', '-b', help=Help.batch_size, default=1000, groups=['extracting'])
 @dip_option('--parallel', '-x', map_to='parallelism_level', help=Help.parallel, default=1, groups=['extracting'])
 @dip_option('--thread_id', '-t', help=Help.thread_id, default=0, groups=['extracting'])
@@ -93,8 +94,10 @@ def cli(**kwargs):
 
 
 def exec_extracting(params, app_settings):
-    try:
-        if params.extracting.enabled:
+    if params.extracting.enabled:
+        if params.extracting.start_date > params.extracting.end_date:
+            raise DipException(f'Invalid dates provided')
+        try:
             filter_by_column = None
             if params.extracting.id_list_path:
                 ids_file = cli_file_read(params.extracting.id_list_path)
@@ -110,8 +113,8 @@ def exec_extracting(params, app_settings):
             extracting_execute(params, app_settings, filter_by_column, data_proccessor, mask_results)
             if data_proccessor:
                 data_proccessor.finalize()
-    except Exception as error:
-        raise DipException(f'Extracting error, {error}')
+        except Exception as error:
+            raise DipException(f'Extracting error, {error}')
 
 
 def exec(params):
@@ -137,8 +140,8 @@ def exec(params):
             raise DipException(f'Processing error, {error}')
 
     except Exception as error:
-        message = f'Execution Error: {error}'
-        click.echo(click.style("Error", fg="red") + message)
+        message = f'Execution Error: {error}' + '\n'
+        click.echo('\n' + click.style("Error: ", fg="red") + message)
         app_settings.logger.exception(message)
 
     message = f'Script has FINISHED'
@@ -163,7 +166,7 @@ def create_masker(mapping_params):
         '(--mapping_path) mapping file is not a valid file name'
     mapping_file = cli_file_read(mapping_params.mapping_path)
 
-    return Masker(cleaner, mapping_file, custom_tokens_filename_list, anonymize_value=ANONYMIZE)
+    return Masker(cleaner, mapping_file, custom_tokens_filename_list, anonymize_value=ANONYMIZE, mask_value=MASK)
 
 
 def extracting_execute(params, app_settings, filter_by_column, data_proccessor, mask_results):
@@ -299,57 +302,25 @@ def masking_execute(params, app_settings):
     params.data.mapping_file_objects.append(mapping_file)
     params.data.destination_folder = params.output_dir
 
+    mask_results = create_masker(params)
     # Read input files and execute
     input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     for f in input_files:
         input_file = cli_file_read(os.path.join(params.input_dir, f))
         params.data.file_objects.append(input_file)
-        cli_file_process(input_file, mapping_file, params.data.cleaner, params, app_settings)
+        cli_file_process(input_file, mask_results, params, app_settings)
 
 
-def cli_file_process(input_file, mapping_file, cleaner, params, app_settings):
-    try:
-        message = f"Processing input file: {input_file.filename}"
-        click.echo(message)
-        app_settings.logger.info(message)
-        f0 = time()
-        output_data = input_file.data
+def cli_file_process(input_file, masker, params, app_settings):
 
-        for column in output_data:
-            message = f'Column: {column} | Start", end=" | '
-            click.echo(message)
-            app_settings.logger.info(message)
-
-            c0 = time()
-            method = NONE_ACTION
-
-            if mapping_file.filename != '' and \
-                    mapping_file.data is not None and \
-                    column in mapping_file.data['column'].to_list() and \
-                    mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
-
-                method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
-
-                if method == ANONYMIZE and (params.data.custom_tokens_filename_list is not None):
-                    output_data[column] = output_data[column].fillna('')
-                    output_data[column] = cleaner.transform(output_data[column].values.tolist())
-
-            message = f'End | took: {time()-c0}'
-            click.echo(message)
-            app_settings.logger.info(message)
-
-        output_filename = os.path.join(params.data.destination_folder,
-                                       input_file.non_extension_part + '_processed.' + input_file.ext)
-        input_file.save_data_to_file(output_data, params.data.destination_folder, params)
-
-        message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
-        click.echo(message)
-        app_settings.logger.info(message)
-
-    except Exception as e:
-        message = f'File processing FAILED for file: {input_file.filename}. Reason: {e}'
-        click.echo(message)
-        app_settings.logger.info(message)
+    f0 = time()
+    output_data = masker(input_file.data, no_pd=True, no_output_json=True)
+    output_filename = os.path.join(params.data.destination_folder,
+                                   input_file.non_extension_part + '_processed.' + input_file.ext)
+    input_file.save_data_to_file(output_data, params.data.destination_folder, params)
+    message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
+    click.echo(message)
+    app_settings.logger.info(message)
 
 
 def cli_file_read(filename):

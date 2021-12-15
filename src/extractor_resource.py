@@ -9,6 +9,7 @@ import json, gzip
 from zipfile import ZipFile
 from time import time
 from requests.auth import HTTPBasicAuth
+from requests.exceptions import ConnectionError
 import getpass
 from string import Template
 
@@ -103,6 +104,9 @@ class Extractor:
                     
                     except DipAuthException as e:
                         raise e
+                    except ConnectionError:
+                        click.echo(click.style("Connection error", fg="red"))
+                        break
                     except Exception as error:
 
                         # Trials exceeded for this interval, jump to next interval
