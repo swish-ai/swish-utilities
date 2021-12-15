@@ -10,10 +10,27 @@ on:
     - build-*
 
 jobs:
+  sast_test:
+    if: ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Run Sonarqube    
+      uses: docker://sonarsource/sonar-scanner-cli:latest
+      with:
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_LOGIN: ${{ secrets.SONAR_LOGIN }}
+        args:
+        - -Dsonar.sources=/github/workflow
+        - -Dsonar.projectKey=swish-utilities-gh
+        - -Dsonar.qualitygate.wait=true
+        - -Dsonar.qualitygate.timeout=300
+
   set_version:
     if: ${{ ( github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '#build') || (github.ref  == 'refs/heads/main') || (github.ref  == 'refs/heads/master')) && !contains(github.event.head_commit.message, '#skip-build') }}
     runs-on: ubuntu-latest
-
+    needs: sast_test
     outputs:
       gitversion: ${{ steps.set-version.outputs.gitversion }}
 
