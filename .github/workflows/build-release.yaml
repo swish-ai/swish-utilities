@@ -22,6 +22,7 @@ jobs:
           -e SONAR_HOST_URL=${{ secrets.SONAR_HOST_URL }} \
           -e SONAR_LOGIN=${{ secrets.SONAR_LOGIN }} \
           -v $(pwd):/github/workflow \
+          --workdir=/github/workflow \
           sonarsource/sonar-scanner-cli:latest \
           -Dsonar.sources=/github/workflow -Dsonar.projectKey=swish-utilities-gh \
           -Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=300
