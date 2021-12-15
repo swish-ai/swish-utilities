@@ -35,10 +35,14 @@ jobs:
         SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
         SLACK_CHANNEL: "#sast-alerts"
         SLACK_USERNAME: "github-actions"
-        SLACK_TITLE: Sonarqube Check Failed - swish-utilities
+
+        SLACK_TITLE: Sonarqube Check Failed - ${{ github.repository }}
+        SLACK_MESSAGE: see ${{ secrets.SONAR_HOST_URL }}/dashboard?id=swish-utilities-gh
+        SLACK_MSG_AUTHOR: "${{ github.repository }}"
+
         SLACK_COLOR: ${{ job.status }}
         SLACK_ICON_EMOJI: ":woman-raising-hand:"
-        SLACK_MESSAGE: see ${{ secrets.SONAR_HOST_URL }}/dashboard?id=swish-utilities-gh
+        
 
 
   set_version:
