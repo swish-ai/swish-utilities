@@ -1,8 +1,9 @@
 import os
 import json
 import re
+import click
 import pandas as pd
-
+from hashlib import sha224
 from pandas import read_csv, DataFrame
 from src import settings
 
@@ -208,11 +209,21 @@ class TextCleaner:
         try:
             res = list(map(lambda x: self.clean_custom_tokens_chunk(x), data))
         except Exception as e:
-            print("There was an Error in clean_custom_token_chunk ", e.__str__())
+            click.echo(click.style(f"There was an Error while masking {e}", fg="red"))
+        return res
+
+    def anonymize(self, data: list) -> list:
+        try:
+            res = list(map(lambda x: sha224(x.encode('utf-8')).hexdigest(), data))
+        except Exception as e:
+            click.echo(click.style(f"There was an Error while anonymizing {e}", fg="red"))
 
         return res
     
     def transform_with_condition(self, df, column, conditions):
+        if not conditions:
+            return self.transform(df[column].values.tolist())
+
         data = df[column].values.tolist()
         no_clean = [True] * len(data)
         for condition in conditions:
@@ -253,20 +264,23 @@ class TextCleaner:
         return x.strip()
 
 class Masker:
-    def __init__(self, cleaner, mapping_file, custom_tokens_filename_list, anonymize_value):
-        self.cleaner = cleaner
+    def __init__(self, cleaner, mapping_file, custom_tokens_filename_list, anonymize_value, mask_value):
+        self.cleaner: TextCleaner = cleaner
         self.mapping_file = mapping_file
         self.custom_tokens_filename_list = custom_tokens_filename_list
-        self.methods = {'ANONYMIZE': anonymize_value}
+        self.methods = {'ANONYMIZE': anonymize_value,
+                        'MASK': mask_value}
 
-    def __call__(self, items):
-        if not items:
+    def __call__(self, items, no_pd = False, no_output_json = False):
+        if not no_pd and not items:
             return items
 
         mapping_file = self.mapping_file
-        custom_tokens_filename_list = self.custom_tokens_filename_list
         cleaner = self.cleaner
-        output_data = pd.json_normalize(items)
+        if no_pd:
+            output_data = items
+        else:
+            output_data = pd.json_normalize(items)
         methods = self.methods
         for column in output_data:
             message = f'Column: {column} | Start", end=" | '
@@ -289,12 +303,15 @@ class Masker:
                 for part in parts:
                     conditions.append(part.split('='))
                     
-            if 'ANONYMIZE' in methods and method == methods['ANONYMIZE'] and  custom_tokens_filename_list:
+            if 'MASK' in methods and method == methods['MASK']:
                 output_data[column] = output_data[column].fillna('')
-                if conditions:
-                    output_data[column] = cleaner.transform_with_condition(output_data, column, conditions)
-                else:
-                    output_data[column] = cleaner.transform(output_data[column].values.tolist())
+                output_data[column] = cleaner.transform_with_condition(output_data, column, conditions)
+            if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
+                output_data[column] = cleaner.anonymize(output_data[column].values.tolist())
+
         
+        if no_output_json:
+            return output_data
+
         return output_data.to_dict(orient="records")
 
