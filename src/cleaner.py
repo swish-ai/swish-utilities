@@ -3,7 +3,7 @@ import json
 import re
 import click
 import pandas as pd
-from hashlib import sha224
+from hashlib import sha256
 from pandas import read_csv, DataFrame
 from src import settings
 
@@ -240,7 +240,7 @@ class TextCleaner:
 
     def anonymize(self, data: list) -> list:
         try:
-            res = list(map(lambda x: sha224(x.encode('utf-8')).hexdigest(), data))
+            res = list(map(lambda x: sha256(x.encode('utf-8')).hexdigest(), data))
         except Exception as e:
             click.echo(click.style(f"There was an Error while anonymizing {e}", fg="red"))
 

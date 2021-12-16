@@ -7,7 +7,7 @@ from cli_util import DipException
 from tests.common import SNOW_RESPONSE1, SNOW_RESPONSE_WITH_CUSTOM_ID, UNITEST_OUTPUT_FILE, UNITEST_OUTPUT_FILE_PREFIX, patch_for_tests
 import os
 import os.path
-from hashlib import sha224
+from hashlib import sha256
 from click.testing import CliRunner
 
 patch_for_tests()
@@ -75,7 +75,7 @@ class FilteringTestCase(TestCase):
             with open("tests/data/input/input.json", 'r') as f:
                 jsn2 = json.load(f)
                 for i, entry in enumerate(jsn2):
-                    assert jsn[i]['sys_created_by'] == sha224(entry['sys_created_by'].encode('utf-8')).hexdigest()
+                    assert jsn[i]['sys_created_by'] == sha256(entry['sys_created_by'].encode('utf-8')).hexdigest()
 
 
     

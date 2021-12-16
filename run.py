@@ -89,7 +89,7 @@ def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
     params = setup_cli(**kwargs)
     start = time()
-    exec(params)
+    exec(params) # NOSONAR
     elapsed = (time() - start)
     click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
 
