@@ -12,6 +12,7 @@ from flashtext import KeywordProcessor
 split_compiled = re.compile(r"\n|\s|\t")
 special_characters_compiled = re.compile(r"\.|\,")
 
+WORDS_REGEX = r'([A-Za-z-]|[\\u5D0-\\u05EA])+'
 
 class UnsupportedFile(Exception):
     """Raised when CustomUserFile selected unsupported type"""
@@ -149,6 +150,8 @@ class TextCleaner:
         self.__space = re.compile(r'\s+')
         self.__ssn = re.compile(r'\b([a-z]*)(\d{3}[-_\.]\d{2}[-_\.]\d{4})([a-z]*)\b')
 
+        self.__words = re.compile(WORDS_REGEX)        
+
         self.__custom_tokens = None
         self.custom_tokens_list = set()
         self.important_tokens_list = set()
@@ -189,20 +192,37 @@ class TextCleaner:
     def get_custom_tokens(self):
         return self.custom_tokens_list
 
+    def __replace_confident(self, match):
+        x = match.group()
+        if self.__special.match(x):
+            return ''
+        if self.__ssn.match(x):
+            return '\1 <#SSN> \3'
+        if self.__ip.match(x):
+            return ' <#I> '
+        if self.__url.match(x):
+            return ' <#U> '
+        if self.__cc.match(x):
+            return ' <#CC> '
+        if self.__email.match(x):
+            return ' <#M> '
+        if self.__phone.match(x):
+            return ' <#P> '
+        if self.__catalog.match(x):
+            return ' <#CG> '
+        if self.__numbers.match(x):
+            return ' <#> '
+        if self.__space.match(x):
+            return ' '
+        return x
+    
     def clean_custom_tokens_chunk(self, x, no_clean = False):
         if no_clean:
             return x
-        x = self._flashtext_names.replace_keywords(x).strip()
-        x = self.__special.sub('', x)
-        x = self.__ssn.sub('\1 <#SSN> \3', x)
-        x = self.__ip.sub(' <#I> ', x)
-        x = self.__url.sub(' <#U> ', x)
-        x = self.__cc.sub(lambda m: ' <#CC> ', x)
-        x = self.__email.sub(' <#M> ', x)
-        x = self.__phone.sub(' <#P> ', x)
-        x = self.__catalog.sub(' <#CG> ', x)
-        x = self.__numbers.sub(lambda m: ' <#> ', x)
-        x = self.__space.sub(' ', x)
+        if self.custom_tokens_list:
+            x = self._flashtext_names.replace_keywords(x).strip()
+        x = self.__words.sub(self.__replace_confident, x)
+
         return x.strip()
 
     def transform(self, data: list) -> list:
