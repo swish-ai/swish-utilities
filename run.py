@@ -17,6 +17,7 @@ from src.file import File
 from pandas import read_csv, read_excel, DataFrame
 from src.cleaner import Masker, TextCleaner, CustomUserFile
 from time import time
+
 try:
     from version import VERSION
 except:  # NOSONAR
