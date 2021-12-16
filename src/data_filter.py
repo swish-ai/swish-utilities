@@ -1,13 +1,14 @@
 
 from typing import List
+from cli_util import DipException
 
 
 class ColumnFilter:
     def __init__(self, file_data, file_column_name, column_name=None):
         if file_column_name in file_data:
-            self.values_set = set((str(v) for v in  file_data[file_column_name]))
+            self.values_set = set((str(v) for v in file_data[file_column_name]))
         else:
-            raise Exception(f'Provided ids file missing requested id column: {file_column_name}')
+            raise DipException(f'Provided ids file missing requested id column: {file_column_name}')
         self.column_name = column_name if column_name else file_column_name
 
     def __call__(self, items):

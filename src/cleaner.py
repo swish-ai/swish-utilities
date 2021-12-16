@@ -9,10 +9,10 @@ from src import settings
 
 from flashtext import KeywordProcessor
 
-split_compiled = re.compile(r"\n|\s|\t")
-special_characters_compiled = re.compile(r"\.|\,")
+split_compiled = re.compile(r"\n|\s")
 
 WORDS_REGEX = r'([A-Za-z-]|[\\u5D0-\\u05EA])+'
+
 
 class UnsupportedFile(Exception):
     """Raised when CustomUserFile selected unsupported type"""
@@ -32,82 +32,88 @@ class CustomUserFile:
         self.data: list = []
 
         if self.ext == 'json':
-            try:
-                try:
-                    with open(self.filename, "r", encoding='utf-8') as f:
-                        data = json.load(f)
-                except Exception as e:
-                    try:
-                        with open(self.filename, "r", encoding='latin-1') as f:
-                            data = json.load(f)
-
-                    except Exception as e:
-                        with open(self.filename, "r", encoding='utf-8-sig') as f:
-                            data = json.load(f)
-
-                if "user_custom_tokens" in data:
-                    data = data["user_custom_tokens"]
-                elif "user_defined_tokens" in data:
-                    data = data["user_defined_tokens"]
-
-                token_list = set()
-                if 'records' in data:
-                    df = DataFrame(data['records'])
-                else:
-                    df = DataFrame(data)
-
-                for column in df:
-                    token_list.update(df[column].to_list())
-
-                token_list = list(token_list)
-                data = list(filter(None, token_list))
-                data = " ".join(data)
-                self.finalize(data)
-
-            except Exception as e:
-                self.data = None
-
+            self.__load_json()
         elif self.ext == 'txt':
-            try:
-                try:
-                    with open(self.filename, "r", encoding='utf-8') as f:
-                        data = f.read()
-
-                except Exception as e:
-                    with open(self.filename, "r", encoding='latin-1') as f:
-                        data = f.read()
-
-                self.finalize(data)
-
-            except Exception as e:
-                self.data = None
-
+            self.__load_txt()
         elif self.ext == 'csv':
-            try:
-                try:
-                    data = read_csv(self.filename, encoding='utf-8')
-                except Exception as e:
-                    data = read_csv(self.filename, encoding='latin-1')
-
-                if "user_custom_tokens" in data.columns:
-                    data = data["user_custom_tokens"].values.tolist()
-                elif "user_defined_tokens" in data.columns:
-                    data = data["user_defined_tokens"].values.tolist()
-
-                token_list = set()
-                for column in data:
-                    token_list.update(data[column].dropna().to_list())
-
-                token_list = list(token_list)
-                data = list(filter(None,token_list))
-
-                data = " ".join(data)
-                self.finalize(data)
-            except Exception as e:
-                self.data = None
-
+            self.__load_csv()
         else:
             raise UnsupportedFile("Unsupported file extension, file should be one of (txt,json,csv)")
+
+    def __load_csv(self):
+        try:
+            try:
+                data = read_csv(self.filename, encoding='utf-8')
+            except Exception:
+                data = read_csv(self.filename, encoding='latin-1')
+
+            if "user_custom_tokens" in data.columns:
+                data = data["user_custom_tokens"].values.tolist()
+            elif "user_defined_tokens" in data.columns:
+                data = data["user_defined_tokens"].values.tolist()
+
+            token_list = set()
+            for column in data:
+                token_list.update(data[column].dropna().to_list())
+
+            token_list = list(token_list)
+            data = list(filter(None, token_list))
+
+            data = " ".join(data)
+            self.finalize(data)
+        except Exception:
+            self.data = None
+
+    def __load_txt(self):
+        try:
+            try:
+                with open(self.filename, "r", encoding='utf-8') as f:
+                    data = f.read()
+
+            except Exception:
+                with open(self.filename, "r", encoding='latin-1') as f:
+                    data = f.read()
+
+            self.finalize(data)
+
+        except Exception:
+            self.data = None
+
+    def __load_json(self):
+        try:
+            try:
+                with open(self.filename, "r", encoding='utf-8') as f:
+                    data = json.load(f)
+            except Exception:
+                try:
+                    with open(self.filename, "r", encoding='latin-1') as f:
+                        data = json.load(f)
+
+                except Exception:
+                    with open(self.filename, "r", encoding='utf-8-sig') as f:
+                        data = json.load(f)
+
+            if "user_custom_tokens" in data:
+                data = data["user_custom_tokens"]
+            elif "user_defined_tokens" in data:
+                data = data["user_defined_tokens"]
+
+            token_list = set()
+            if 'records' in data:
+                df = DataFrame(data['records'])
+            else:
+                df = DataFrame(data)
+
+            for column in df:
+                token_list.update(df[column].to_list())
+
+            token_list = list(token_list)
+            data = list(filter(None, token_list))
+            data = " ".join(data)
+            self.finalize(data)
+
+        except Exception:
+            self.data = None
 
     def finalize(self, data):
         self.data = split_compiled.split(data)
@@ -121,7 +127,7 @@ class CustomUserFile:
 
 class TextCleaner:
 
-    def __init__(self, custom_tokens_filename_list: None, important_token_file = None):
+    def __init__(self, custom_tokens_filename_list: None, important_token_file=None):
         """
         Cleaner Class
         compiling regexes and custom tokens file.
@@ -131,12 +137,12 @@ class TextCleaner:
 
         self.__phone = re.compile(
             r'\d{3}-{2}-{5,7}|'
-            r'\+\d{2,4} \d{2,5} \d{2,7} \(?\d{2,4}\)?|' 
-            r'\+\d{2,4} \d{1,5} \d{2,7} \d{1,7} (\d{1,7})?|' 
-            r'\+\d{2,4} \d{1,5} \d{2,7}( \d{1,7})?( \d{1,7})?|' 
+            r'\+\d{2,4} \d{2,5} \d{2,7} \(?\d{2,4}\)?|'
+            r'\+\d{2,4} \d{1,5} \d{2,7} \d{1,7} (\d{1,7})?|'
+            r'\+\d{2,4} \d{1,5} \d{2,7}( \d{1,7})?( \d{1,7})?|'
             r'\+?\(?\+?\d{1,3}\)?[-\s]\d{1,3}[-\s]\d{1,4}|'
             r'\+?\(?\+?\d{1,3}\)?[-\s]\d{1,3}[-\s]\d{1,4}[-\s]\d{1,4}|'
-            r'\+\d{2,4} \(?\d{1,4}\)? \d{1,4}|' 
+            r'\+\d{2,4} \(?\d{1,4}\)? \d{1,4}|'
             r'\d{2,4}[-\s]\d{2,4}[-\s]\d{2,4}([-\s]\d{2,4})?')
 
         self.__url = re.compile(r"(http[s]?://(www\.)?|www\.)\S+", re.IGNORECASE)
@@ -150,7 +156,7 @@ class TextCleaner:
         self.__space = re.compile(r'\s+')
         self.__ssn = re.compile(r'\b([a-z]*)(\d{3}[-_\.]\d{2}[-_\.]\d{4})([a-z]*)\b')
 
-        self.__words = re.compile(WORDS_REGEX)        
+        self.__words = re.compile(WORDS_REGEX)
 
         self.__custom_tokens = None
         self.custom_tokens_list = set()
@@ -166,7 +172,7 @@ class TextCleaner:
                 self.important_tokens_list = set(important_tokens)
 
         except Exception as error:
-            print("Error while extracting important tokens. Info: ",error)
+            print("Error while extracting important tokens. Info: ", error)
 
     def set_custom_tokens(self, custom_tokens_filename_list=None):
 
@@ -215,8 +221,8 @@ class TextCleaner:
         if self.__space.match(x):
             return ' '
         return x
-    
-    def clean_custom_tokens_chunk(self, x, no_clean = False):
+
+    def clean_custom_tokens_chunk(self, x, no_clean=False):
         if no_clean:
             return x
         if self.custom_tokens_list:
@@ -239,7 +245,7 @@ class TextCleaner:
             click.echo(click.style(f"There was an Error while anonymizing {e}", fg="red"))
 
         return res
-    
+
     def transform_with_condition(self, df, column, conditions):
         if not conditions:
             return self.transform(df[column].values.tolist())
@@ -250,11 +256,10 @@ class TextCleaner:
             c_column, val = condition
             val = str(val)
             c_data = df[c_column].values.tolist()
-            for i , c in enumerate(c_data):
+            for i, c in enumerate(c_data):
                 if str(c) == val:
                     no_clean[i] = False
         return [self.clean_custom_tokens_chunk(x, no_clean[i]) for i, x in enumerate(data)]
-
 
     def is_custom_loaded(self) -> bool:
         return bool(self.__custom_tokens)
@@ -283,6 +288,7 @@ class TextCleaner:
         x = self.__space.sub(' ', x)
         return x.strip()
 
+
 class Masker:
     def __init__(self, cleaner, mapping_file, custom_tokens_filename_list, anonymize_value, mask_value):
         self.cleaner: TextCleaner = cleaner
@@ -291,7 +297,7 @@ class Masker:
         self.methods = {'ANONYMIZE': anonymize_value,
                         'MASK': mask_value}
 
-    def __call__(self, items, no_pd = False, no_output_json = False):
+    def __call__(self, items, no_pd=False, no_output_json=False):
         if not no_pd and not items:
             return items
 
@@ -306,32 +312,32 @@ class Masker:
             message = f'Column: {column} | Start", end=" | '
             print(message)
 
-            method = None
-            condition = None
+            self.__process_col(output_data, mapping_file, column, methods, cleaner)
 
-            if mapping_file.filename != '' and \
-                    mapping_file.data is not None and \
-                    column in mapping_file.data['column'].to_list() and \
-                    mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
-
-                condition = mapping_file.data[mapping_file.data['column'] == column]['condition'].item()
-                method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
-            
-            conditions = []
-            if condition and not pd.isna(condition) and condition != 'nan':
-                parts = [p.strip() for p in  condition.split('|') if p.strip()]
-                for part in parts:
-                    conditions.append(part.split('='))
-                    
-            if 'MASK' in methods and method == methods['MASK']:
-                output_data[column] = output_data[column].fillna('')
-                output_data[column] = cleaner.transform_with_condition(output_data, column, conditions)
-            if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
-                output_data[column] = cleaner.anonymize(output_data[column].values.tolist())
-
-        
         if no_output_json:
             return output_data
 
         return output_data.to_dict(orient="records")
 
+    def __process_col(self, output_data, mapping_file, column, methods, cleaner):
+        method = None
+        condition = None
+        if mapping_file.filename != '' and \
+                mapping_file.data is not None and \
+                column in mapping_file.data['column'].to_list() and \
+                mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
+
+            condition = mapping_file.data[mapping_file.data['column'] == column]['condition'].item()
+            method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
+
+        conditions = []
+        if condition and not pd.isna(condition) and condition != 'nan':
+            parts = [p.strip() for p in condition.split('|') if p.strip()]
+            for part in parts:
+                conditions.append(part.split('='))
+
+        if 'MASK' in methods and method == methods['MASK']:
+            output_data[column] = output_data[column].fillna('')
+            output_data[column] = cleaner.transform_with_condition(output_data, column, conditions)
+        if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
+            output_data[column] = cleaner.anonymize(output_data[column].values.tolist())

@@ -323,6 +323,26 @@ def cli_file_process(input_file, masker, params, app_settings):
     app_settings.logger.info(message)
 
 
+def load_json_to_file_obj(file_object):
+    try:
+        # JSON file
+        f = open(file_object.filename, "r", encoding='utf-8')
+    except Exception:
+        try:
+            f = open(file_object.filename, "r", encoding='latin-1')
+        except Exception:
+            f = open(file_object.filename, "r", encoding='utf-8-sig')
+
+    # Reading from file
+    data = json.loads(f.read())
+
+    # Checking the json structure
+    if 'records' in data:
+        file_object.data = DataFrame(data['records'])
+    else:
+        file_object.data = DataFrame(data)
+
+
 def cli_file_read(filename):
     try:
         view_name = os.path.split(filename)[-1]
@@ -351,23 +371,7 @@ def cli_file_read(filename):
                         file_object.data = read_csv(file_object.filename, encoding='utf-8-sig')
 
             if file_object.ext == 'json':
-                try:
-                    # JSON file
-                    f = open(file_object.filename, "r", encoding='utf-8')
-                except Exception:
-                    try:
-                        f = open(file_object.filename, "r", encoding='latin-1')
-                    except Exception:
-                        f = open(file_object.filename, "r", encoding='utf-8-sig')
-
-                # Reading from file
-                data = json.loads(f.read())
-
-                # Checking the json structure
-                if 'records' in data:
-                    file_object.data = DataFrame(data['records'])
-                else:
-                    file_object.data = DataFrame(data)
+                load_json_to_file_obj(file_object)
 
             return file_object
 
