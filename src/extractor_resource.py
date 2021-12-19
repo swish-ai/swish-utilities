@@ -138,7 +138,14 @@ class Extractor:
             url += '&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
         else:
             url = params.extracting.url
-            url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}'
+            if 'sysparm_query=' in url:
+                url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}'
+            else:
+                if '?' not in url:
+                    url += '?'
+                else:
+                    url += '&'
+                url += f'sysparm_query=sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}'
             url += f'&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
 
         message = f'Thread: {self.thread_id}, URL: {url}'
