@@ -12,7 +12,6 @@ from time import time
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import ConnectionError
 import getpass
-from string import Template
 
 from cli_util import DipAuthException, DipException
 
@@ -65,10 +64,11 @@ class Extractor:
 
             batch_start_date = self.start_date
             batch_end_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
-            formated_url = Template(params.extracting.url).safe_substitute({
-                'start_date': f'{batch_start_date}',
-                'end_date': f'{batch_end_date}',
-            })
+            formated_url = params.extracting.url.format(
+                start_date=f'{batch_start_date}',
+                end_date=f'{batch_end_date}',
+                custom=''
+            )
             use_user_url = formated_url != params.extracting.url
             while self.total_added < params.extracting.stop_limit and batch_start_date < batch_end_date:
 
@@ -129,13 +129,16 @@ class Extractor:
         params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
 
     def __get_request_url(self, use_user_url, params, batch_start_date, batch_end_date):
+        # use user url, means that we are not constructing our sysparm_query
+        # but using user provided url but we stil can replace some of its attributes such as
+        # start_date and end_date
         if use_user_url:
             self.settings.logger.info('Going to use user url')
-            url = Template(params.extracting.url).safe_substitute({
-                'start_date': f'{batch_start_date}',
-                'end_date': f'{batch_end_date}',
-            })
-            url += '&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+            url = params.extracting.url.format(
+                start_date=f'{batch_start_date}',
+                end_date=f'{batch_end_date}',
+            )
+            url += f'&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
         else:
             url = params.extracting.url
             if 'sysparm_query=' in url:
