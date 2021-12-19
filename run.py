@@ -317,7 +317,7 @@ def cli_file_process(input_file, masker, params, app_settings):
     f0 = time()
     output_data = masker(input_file.data, no_pd=True, no_output_json=True)
     output_filename = os.path.join(params.data.destination_folder,
-                                   input_file.non_extension_part + '_processed.' + input_file.ext)
+                                   input_file.non_extension_part + '_processed.json')
     input_file.save_data_to_file(output_data, params.data.destination_folder, params)
     message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
     click.echo(message)
