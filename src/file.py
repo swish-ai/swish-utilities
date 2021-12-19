@@ -32,7 +32,7 @@ class File:
     def save_data_to_file(self, output_data, destination_folder, params):
         try:
             output_filename = os.path.join(destination_folder,
-                                           self.non_extension_part + '_processed.' + self.ext)
+                                           self.non_extension_part + '_processed.json')
             params.output_filename = output_filename
 
             # if self.ext == 'xlsx':

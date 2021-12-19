@@ -11,7 +11,7 @@ from flashtext import KeywordProcessor
 
 split_compiled = re.compile(r"\n|\s")
 
-WORDS_REGEX = r'([A-Za-z-]|[\\u5D0-\\u05EA])+'
+WORDS_REGEX = r'([^\s-]|[.]|[@-])+'
 
 
 class UnsupportedFile(Exception):
@@ -200,25 +200,25 @@ class TextCleaner:
 
     def __replace_confident(self, match):
         x = match.group()
-        if self.__special.match(x):
+        if self.__special.search(x):
             return ''
-        if self.__ssn.match(x):
+        if self.__ssn.search(x):
             return '\1 <#SSN> \3'
-        if self.__ip.match(x):
+        if self.__ip.search(x):
             return ' <#I> '
-        if self.__url.match(x):
+        if self.__url.search(x):
             return ' <#U> '
-        if self.__cc.match(x):
+        if self.__cc.search(x):
             return ' <#CC> '
-        if self.__email.match(x):
+        if self.__email.search(x):
             return ' <#M> '
-        if self.__phone.match(x):
+        if self.__phone.search(x):
             return ' <#P> '
-        if self.__catalog.match(x):
+        if self.__catalog.search(x):
             return ' <#CG> '
-        if self.__numbers.match(x):
+        if self.__numbers.search(x):
             return ' <#> '
-        if self.__space.match(x):
+        if self.__space.search(x):
             return ' '
         return x
 
@@ -240,7 +240,7 @@ class TextCleaner:
 
     def anonymize(self, data: list) -> list:
         try:
-            res = list(map(lambda x: sha256(x.encode('utf-8')).hexdigest(), data))
+            res = list(map(lambda x: sha256(x.encode('utf-8')).hexdigest() if x and not pd.isna(x) and x != 'nan' else x, data))
         except Exception as e:
             click.echo(click.style(f"There was an Error while anonymizing {e}", fg="red"))
 
