@@ -29,7 +29,7 @@ runs:
     #   uses: actions/checkout@v2
 
     - name: python build
-      if: ${{ inputs.os }} != "linux-old-glibc"
+      if: ${{ inputs.os != "linux-old-glibc" }}
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
@@ -41,13 +41,13 @@ runs:
         ls -l dist/
         
     - name: old python build
-      if: ${{ inputs.os }} == "linux-old-glibc"
+      if: ${{ inputs.os == "linux-old-glibc" }}
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
-        apt-get update && apt-get install -y software-properties-common binutils
-        add-apt-repository ppa:deadsnakes/ppa
-        apt-get update && apt-get install -y python3.9 python3.9-dev python3.9-venv
+        sudo apt-get update && apt-get install -y software-properties-common binutils
+        sudo add-apt-repository ppa:deadsnakes/ppa
+        sudo apt-get update && apt-get install -y python3.9 python3.9-dev python3.9-venv
         python3.9 -m venv /venv --upgrade-deps
 
         export PATH=/venv/bin:$PATH
