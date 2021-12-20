@@ -8,7 +8,10 @@
         },
         {
             "column": "newvalue","method": 2,"condition": "fieldname=short_description|fieldname=fieldname"
-        }
+        },
+		{
+			"column": "sys_created_by", "method": 1
+		}
     ],
     "custom_token":[],
     "custom_token_dir": "",

@@ -5,18 +5,20 @@ from urllib.parse import parse_qs
 import requests
 import datetime
 import os
-import json, gzip
+import json
+import gzip
 from zipfile import ZipFile
 from time import time
 from requests.auth import HTTPBasicAuth
+from requests.exceptions import ConnectionError
 import getpass
-from string import Template
 
-from cli_util import DipAuthException
+from cli_util import DipAuthException, DipException
 
 
 class Extractor:
-    def __init__(self, start_date, end_date, thread_id, app_settings=None, filter_by_column=None, data_proccessor=None, mask_results=None):
+    def __init__(self, start_date, end_date, thread_id, app_settings=None,
+                 filter_by_column=None, data_proccessor=None, mask_results=None):
 
         self.settings = app_settings
         self.session = requests.Session()
@@ -39,7 +41,6 @@ class Extractor:
         self.mask_results = mask_results
         self.data_proccessor = data_proccessor
 
-
     def api_extract(self, params):
         """
         :param url:
@@ -58,18 +59,16 @@ class Extractor:
             params.extracting.headers = {
                 'Content-type': 'application/json'
             }
-            password = params.extracting.password
-            if not password:
-                password = getpass.getpass(prompt='Password: ', stream=None)
 
-            params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
+            self.__setup_auth(params)
 
             batch_start_date = self.start_date
             batch_end_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
-            formated_url = Template(params.extracting.url).safe_substitute({
-                'start_date': f'{batch_start_date}',
-                'end_date': f'{batch_end_date}',
-            })
+            formated_url = params.extracting.url.format(
+                start_date=f'{batch_start_date}',
+                end_date=f'{batch_end_date}',
+                custom=''
+            )
             use_user_url = formated_url != params.extracting.url
             while self.total_added < params.extracting.stop_limit and batch_start_date < batch_end_date:
 
@@ -79,35 +78,7 @@ class Extractor:
                 self.response_size = params.extracting.batch_size
                 self.offset = 0
 
-                while self.response_size >= params.extracting.batch_size and self.total_added < params.extracting.stop_limit:
-
-                    if use_user_url:
-                        self.settings.logger.info('Going to use user url')
-                        url = Template(params.extracting.url).safe_substitute({
-                            'start_date': f'{batch_start_date}',
-                            'end_date': f'{batch_end_date}',
-                        })
-                        url += '&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
-                    else:
-                        url = params.extracting.url
-                        url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
-
-                    message = f'Thread: {self.thread_id}, URL: {url}'
-                    print(message)
-                    self.settings.logger.info(message)
-
-                    trial_number = 1
-
-                    try:
-                        self.handle_api_request(params, url, trial_number)
-                    
-                    except DipAuthException as e:
-                        raise e
-                    except Exception as error:
-
-                        # Trials exceeded for this interval, jump to next interval
-                        break
-
+                self.__do_step(params, use_user_url, batch_start_date, batch_end_date)
 
                 batch_start_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
                 batch_end_date = batch_end_date + datetime.timedelta(hours=params.extracting.interval)
@@ -127,15 +98,69 @@ class Extractor:
             if len(self.total_results) > 0:
                 self.save_data_to_file(self.total_results, params)
 
-
             message = f"Thread {self.thread_id}: finishing"
             print(message)
             self.settings.logger.info(message)
 
+    def __do_step(self, params, use_user_url, batch_start_date, batch_end_date):
+
+        while self.response_size >= params.extracting.batch_size and self.total_added < params.extracting.stop_limit:
+
+            url = self.__get_request_url(use_user_url, params, batch_start_date, batch_end_date)
+            trial_number = 1
+
+            try:
+                self.handle_api_request(params, url, trial_number)
+
+            except DipAuthException as e:
+                raise e
+            except ConnectionError:
+                click.echo(click.style("Connection error", fg="red"))
+                break
+            except Exception:
+                # Trials exceeded for this interval, jump to next interval
+                break
+
+    def __setup_auth(self, params):
+        password = params.extracting.password
+        if not password:
+            password = getpass.getpass(prompt='Password: ', stream=None)
+
+        params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
+
+    def __get_request_url(self, use_user_url, params, batch_start_date, batch_end_date):
+        # use user url, means that we are not constructing our sysparm_query
+        # but using user provided url but we stil can replace some of its attributes such as
+        # start_date and end_date
+        if use_user_url:
+            self.settings.logger.info('Going to use user url')
+            url = params.extracting.url.format(
+                start_date=f'{batch_start_date}',
+                end_date=f'{batch_end_date}',
+            )
+            url += f'&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+        else:
+            url = params.extracting.url
+            if 'sysparm_query=' in url:
+                url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}'
+            else:
+                if '?' not in url:
+                    url += '?'
+                else:
+                    url += '&'
+                url += f'sysparm_query=sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}'
+            url += f'&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+
+        message = f'Thread: {self.thread_id}, URL: {url}'
+        print(message)
+        self.settings.logger.info(message)
+
+        return url
+
     def handle_api_request(self, params, url, trial_number):
 
         t1 = time()
-        resp = self.session.get(url, headers=params.extracting.headers, auth = params.extracting.auth)
+        resp = self.session.get(url, headers=params.extracting.headers, auth=params.extracting.auth)
         if resp.status_code == 401:
             raise DipAuthException('Authentication failure')
 
@@ -145,47 +170,7 @@ class Extractor:
             self.offset += params.extracting.batch_size
             resp_body = resp.json()
 
-            if resp.status_code == 200 and resp_body.__contains__('result') and not resp_body.__contains__('error'):
-                results = resp_body['result']
-
-                # Validate results as json
-                try:
-                    json.dumps(results)
-                except Exception as error:
-                    raise Exception('Corrupted JSON from API')
-                
-                res_len = len(results)
-                results = self.filter_by_column(results) if self.filter_by_column is not None else results
-                if self.data_proccessor:
-                    self.data_proccessor(results)
-                
-                results = self.mask_results(results) if self.mask_results is not None else results
-
-                filtered_len = res_len - len(results)
-                self.settings.logger.info(f'Filtered out {filtered_len} of {res_len}')
-
-                self.total_results += results
-                self.response_size = len(results)
-                self.total_added += self.response_size
-
-                message = f'Added: {self.response_size}. (Total Added: {self.total_added}, Total Failed Approximated: {self.total_failed}), Response Time: {response_time} s'
-                self.settings.logger.info(message)
-                click.echo(click.style(message, fg="green", underline=True))
-
-                if len(self.total_results) >= params.extracting.file_limit:
-                    message = 'File Split'
-                    print(message)
-                    self.settings.logger.info(message)
-                    self.save_data_to_file(self.total_results, params)
-                    self.total_results = []
-            else:
-                message = ''
-                if resp.json().__contains__('error'):
-                    message = f"{str(resp.json()['error'])}"
-                else:
-                    message = f"{str(resp.json())}"
-
-                raise Exception(message)
+            self.__process_response(resp, resp_body, params, response_time)
 
         except Exception as error:
             import traceback
@@ -201,9 +186,54 @@ class Extractor:
                 self.settings.logger.error(message)
                 print(message)
                 self.total_failed += params.extracting.batch_size
-                raise Exception(message)
+                raise DipException(message)
 
-    
+    def __process_response(self, resp, resp_body, params, response_time):
+        if resp.status_code == 200 and resp_body.__contains__('result') and not resp_body.__contains__('error'):
+            results = resp_body['result']
+
+            # Validate results as json
+            try:
+                json.dumps(results)
+            except Exception:
+                raise DipException('Corrupted JSON from API')
+
+            res_len = len(results)
+            results = self.filter_by_column(results) if self.filter_by_column is not None else results
+            if self.data_proccessor:
+                self.data_proccessor(results)
+
+            results = self.mask_results(results) if self.mask_results is not None else results
+
+            filtered_len = res_len - len(results)
+            self.settings.logger.info(f'Filtered out {filtered_len} of {res_len}')
+
+            self.total_results += results
+            self.response_size = len(results)
+            self.total_added += self.response_size
+
+            message = f'Added: {self.response_size}. (Total Added: {self.total_added}, \
+Total Failed Approximated: {self.total_failed}), Response Time: {response_time} s'
+            self.settings.logger.info(message)
+            click.echo(click.style(message, fg="green", underline=True))
+
+            if len(self.total_results) >= params.extracting.file_limit:
+                message = 'File Split'
+                print(message)
+                self.settings.logger.info(message)
+                self.save_data_to_file(self.total_results, params)
+                self.total_results = []
+        else:
+            message = self.__get_err_message(resp)
+            raise DipException(message)
+
+    def __get_err_message(self, resp):
+        if resp.json().__contains__('error'):
+            message = f"{str(resp.json()['error'])}"
+        else:
+            message = f"{str(resp.json())}"
+        return message
+
     def get_output_filename(self, params):
         prefix = 'output_'
         try:
@@ -212,13 +242,13 @@ class Extractor:
             query = parsed_url.query
             tn = 'tablename'
             if tn in query:
-                part=parsed_url.query[parsed_url.query.index(tn) + len(tn):]
+                part = parsed_url.query[parsed_url.query.index(tn) + len(tn):]
                 entity = re.findall(r'\w+', part)[0]
                 prefix = f'{prefix}_{entity}_'
-        except Exception as e:
+        except Exception:
             self.settings.logger.info(f'Failed parsing {params.extracting.url} using {prefix}')
-        return os.path.join(params.extracting.output_dir, prefix + self.settings.reset_timestamp() +
-                            '_' + str(self.thread_id))
+        return os.path.join(params.extracting.output_dir,
+                            prefix + self.settings.reset_timestamp() + '_' + str(self.thread_id))
 
     def save_data_to_file(self, results, params):
         try:
@@ -232,7 +262,7 @@ class Extractor:
             try:
                 json.dumps(results[-1])
 
-            except Exception as error:
+            except Exception:
                 deleted = results[-1]
                 results.pop()
                 message = f'Deleted data to maintain JSON format: {deleted}'
@@ -240,11 +270,11 @@ class Extractor:
                 print(message)
 
             try:
-                self.write_to_json_file(results,params,'utf-8')
+                self.write_to_json_file(results, params, 'utf-8')
             except Exception as e:
                 print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
 
-                self.write_to_json_file(results,params,'utf-8-sig')
+                self.write_to_json_file(results, params, 'utf-8-sig')
 
             message = f'Writing to file COMPLETED SUCCESSFULLY for file:{output_filename}'
             self.settings.logger.info(message)
@@ -253,16 +283,15 @@ class Extractor:
         except Exception as e:
             message = f'Error while saving file. {e}'
             self.settings.logger.exception(message)
-            raise Exception(message)
+            raise DipException(message)
 
     def write_to_json_file(self, results, params, encoding):
 
-
         if params.extracting.compress and not params.masking.enabled:
-            with gzip.open(params.output_filename + '.json.gz', 'wt', encoding= encoding) as zipfile:
+            with gzip.open(params.output_filename + '.json.gz', 'wt', encoding=encoding) as zipfile:
                 json.dump(results, zipfile)
         else:
-            with open(params.output_filename + '.json', 'w', encoding= encoding) as f:
+            with open(params.output_filename + '.json', 'w', encoding=encoding) as f:
                 json.dump(results, f)
 
             # ZipFile(f'{params.output_filename}.zip', mode='w').write(params.output_filename)
@@ -275,7 +304,7 @@ class CsvFromJson:
         self.settings = settings
         self.data_proccessor = data_proccessor
         self.files_and_dirs = files_and_dirs
-    
+
     def create_csv(self):
         files_and_dirs = self.files_and_dirs
         for input_source in files_and_dirs:
@@ -299,10 +328,11 @@ class CsvFromJson:
             self.settings.logger.info(f"{file_path} doesn't have json extension, skipping it")
 
     def proccess_dir(self, dir_path):
-        file_names =  os.listdir(dir_path)
+        file_names = os.listdir(dir_path)
         for file_name in file_names:
             file_path = os.path.join(dir_path, file_name)
             self.proccess_file(file_path)
+
 
 class DefaultDataProccessor:
     def __init__(self, out_path, prop_name):
@@ -326,7 +356,3 @@ class DefaultDataProccessor:
         with open(self.out_path, 'w+') as out:
             out.write(f'{self.prop_name}\n')
             out.write('\n'.join(self.results_set))
-            
-
-
-

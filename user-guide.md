@@ -117,7 +117,7 @@ swish-utilities  “--extract” "--url" ""https://SERVICENOW_HOST_NAME/api/now/
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-“ --start\_date" "2019-04-18" 
+"--start\_date" "2019-04-18" 
 "--end\_date" "2021-04-22" 
 "--interval" "24"
 
@@ -128,7 +128,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-“ --start\_date" "2019-04-18" 
+"--start\_date" "2019-04-18" 
 "--end\_date" "2021-04-22" 
 "--interval" "24"
 "--out\_props\_csv\_path" "documentkeys.csv"
@@ -140,7 +140,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-“ --start\_date" "2019-04-18" 
+"--start\_date" "2019-04-18" 
 "--end\_date" "2021-04-22"
 "--id\_list\_path" "sys\_ids\_list.csv"
 
@@ -151,7 +151,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-“ --start\_date" "2019-04-18" 
+"--start\_date" "2019-04-18" 
 "--end\_date" "2021-04-22"
 "--id\_list\_path" "fieldname\_ids.csv"
 "--id\_field\_name" "fieldname"
@@ -163,7 +163,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000" 
-“ --start\_date" "2019-04-18" 
+"--start\_date" "2019-04-18" 
 "--end\_date" "2021-04-22" 
 "--interval" "24"
 **"--parallel"”" "2"**
@@ -175,7 +175,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
 "--batch\_size" "10000" "--file\_limit" "50000"
-“ --start\_date" "2019-04-18" 
+"--start\_date" "2019-04-18" 
 "--end\_date" "2021-04-22" 
 "--interval" "24"
 "--parallel" “2”
@@ -196,18 +196,18 @@ swish-utilities **"--proccess", "--input\_sources", "tests/data/sys\_audit.json"
 
 A table file of csv format with column names and the action method (2 for masking)
 
-short\_description,2
+short\_description,2,
 
-description,2
+description,2,
 
-close\_notes,2
+close\_notes,2,
 
-comments,2
+comments,2,
 
 
-|column|method|
-| :- | :- |
-|fieldname|2|
+|column|method|condition|
+| :- | :- | :- |
+|fieldname|2||
 New line delimiter
 
 <br>

@@ -3,8 +3,11 @@ import gzip
 import json
 from pandas import read_csv, read_excel, DataFrame
 
+from cli_util import DipException
+
+
 class File:
-    def __init__(self, filename, ext, selected, view_name, is_cli = False):
+    def __init__(self, filename, ext, selected, view_name, is_cli=False):
         self.view_name = view_name
         self.filename = filename
         self.ext = ext
@@ -29,7 +32,7 @@ class File:
     def save_data_to_file(self, output_data, destination_folder, params):
         try:
             output_filename = os.path.join(destination_folder,
-                                           self.non_extension_part + '_processed.' + self.ext)
+                                           self.non_extension_part + '_processed.json')
             params.output_filename = output_filename
 
             # if self.ext == 'xlsx':
@@ -46,21 +49,20 @@ class File:
             #
             # elif self.ext == 'json':
             try:
-                    self.write_to_json_file(output_data, params, 'utf-8')
+                self.write_to_json_file(output_data, params, 'utf-8')
             except Exception as e:
-                    print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
-                    self.write_to_json_file(output_data, params, 'utf-8-sig')
+                print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
+                self.write_to_json_file(output_data, params, 'utf-8-sig')
 
         except Exception as e:
             message = f'Error while saving file to: {output_filename}. {e.__str__()}'
             print(message)
-            raise Exception(message)
+            raise DipException(message)
 
     def write_to_json_file(self, results, params, encoding):
 
-
         if params.compress:
-            with gzip.open(params.output_filename + '.gz', 'wt', encoding= encoding) as file:
+            with gzip.open(params.output_filename + '.gz', 'wt', encoding=encoding) as file:
                 results.to_json(file, force_ascii=False, orient='records', compression='gzip')
         else:
             with open(params.output_filename, 'w', encoding=encoding) as file:
