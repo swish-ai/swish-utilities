@@ -60,10 +60,12 @@ class File:
             raise DipException(message)
 
     def write_to_json_file(self, results, params, encoding):
-
+        indent = None
+        if params.pretty_json:
+            indent = 4
         if params.compress:
             with gzip.open(params.output_filename + '.gz', 'wt', encoding=encoding) as file:
-                results.to_json(file, force_ascii=False, orient='records', compression='gzip')
+                results.to_json(file, force_ascii=False, orient='records', compression='gzip', indent=indent)
         else:
             with open(params.output_filename, 'w', encoding=encoding) as file:
-                results.to_json(file, force_ascii=False, orient='records')
+                results.to_json(file, force_ascii=False, orient='records', indent=indent)

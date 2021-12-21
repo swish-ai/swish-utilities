@@ -287,12 +287,16 @@ Total Failed Approximated: {self.total_failed}), Response Time: {response_time} 
 
     def write_to_json_file(self, results, params, encoding):
 
+        indent = None
+        if params.extracting.pretty_json:
+            indent = 4
+
         if params.extracting.compress and not params.masking.enabled:
             with gzip.open(params.output_filename + '.json.gz', 'wt', encoding=encoding) as zipfile:
-                json.dump(results, zipfile)
+                json.dump(results, zipfile, indent=indent)
         else:
             with open(params.output_filename + '.json', 'w', encoding=encoding) as f:
-                json.dump(results, f)
+                json.dump(results, f, indent=indent)
 
             # ZipFile(f'{params.output_filename}.zip', mode='w').write(params.output_filename)
 
