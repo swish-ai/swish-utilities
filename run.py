@@ -81,6 +81,7 @@ def print_version(ctx, param, value):
 @dip_option('--input_sources', '-is', help=Help.input_sources, default='', groups=['processing'])
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
             groups=['extracting', 'processing'])
+@dip_option('--pretty_json', '-pj', is_flag=True, help=Help.pretty_json, groups=['extracting', 'masking'])
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
