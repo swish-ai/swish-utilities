@@ -29,7 +29,7 @@ runs:
     #   uses: actions/checkout@v2
 
     - name: python build
-      if: ${{ inputs.os != 'linux-old-glibc' }}
+      if: ${{ inputs.os != 'linux-el7' }}
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
@@ -40,23 +40,13 @@ runs:
           ${{ inputs.sourcename }} -n ${{ inputs.distname }}
         ls -l dist/
         
-    - name: old python build
-      if: ${{ inputs.os == 'linux-old-glibc' }}
+    - name: python build el7
+      if: ${{ inputs.os == 'linux-el7' }}
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
-        sudo apt-get update && apt-get install -y software-properties-common binutils
-        sudo add-apt-repository ppa:deadsnakes/ppa
-        sudo apt-get update && apt-get install -y python3.9 python3.9-dev python3.9-venv
-        python3.9 -m venv /venv --upgrade-deps
-
-        export PATH=/venv/bin:$PATH
-        which python
-        python -m pip install -r requirements.txt
-        python -m pip install pyinstaller
-        pyinstaller --clean --onefile \
-          --exclude-module matplotlib --exclude-module tkinter --exclude-module qt5 --exclude-module python-dateutil --exclude-module pyinstaller --exclude-module tests \
-          ${{ inputs.sourcename }} -n ${{ inputs.distname }}
+        export DIST_NAME=${{ inputs.distname }}
+        el7-build/run-build.sh
         ls -l dist/
 
     - name: set-names

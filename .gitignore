@@ -69,3 +69,5 @@ config.json
 # virtualenv
 .pyenv
 
+# pyinstaller
+swish-utilities*.spec
