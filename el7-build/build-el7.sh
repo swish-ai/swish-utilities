@@ -14,5 +14,5 @@ DIST_NAME=${DIST_NAME:-swish-utilities}
 pyinstaller --clean --onefile \
   --exclude-module matplotlib --exclude-module tkinter --exclude-module qt5 \
   --exclude-module python-dateutil --exclude-module pyinstaller --exclude-module tests \
-  run.py -n swish-utilities-el7
+  run.py -n ${DIST_NAME}
 
