@@ -29,7 +29,7 @@ runs:
     #   uses: actions/checkout@v2
 
     - name: python build
-      if: ${{ inputs.os != "linux-old-glibc" }}
+      if: ${{ inputs.os != 'linux-old-glibc' }}
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
@@ -41,7 +41,7 @@ runs:
         ls -l dist/
         
     - name: old python build
-      if: ${{ inputs.os == "linux-old-glibc" }}
+      if: ${{ inputs.os == 'linux-old-glibc' }}
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
