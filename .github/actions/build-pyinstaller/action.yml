@@ -29,6 +29,7 @@ runs:
     #   uses: actions/checkout@v2
 
     - name: python build
+      if: ${{ inputs.os != 'linux-el7' }}
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
@@ -39,6 +40,14 @@ runs:
           ${{ inputs.sourcename }} -n ${{ inputs.distname }}
         ls -l dist/
         
+    - name: python build el7
+      if: ${{ inputs.os == 'linux-el7' }}
+      shell: bash
+      run: |
+        echo "VERSION='${{ inputs.version }}'" > version.py
+        export DIST_NAME=${{ inputs.distname }}
+        el7-build/run-build.sh
+        ls -l dist/
 
     - name: set-names
       id: set-names
