@@ -7,6 +7,7 @@ from tests.common import SNOW_RESPONSE1, SNOW_RESPONSE_WITH_CUSTOM_ID, UNITEST_O
 import os
 import os.path
 from click.testing import CliRunner
+import csv
 
 patch_for_tests()
 
@@ -69,6 +70,30 @@ class FilteringTestCase(TestCase):
         with open("tests/data/output/input_processed.json", 'r') as f:
             jsn = json.load(f)
             for entry in jsn:
+                assert entry['documentkey'] == '<#CG>'
+    
+    def test_mask_to_csv(self):
+
+        if os.path.isfile("tests/data/output/input_processed.csv"):
+            os.remove("tests/data/output/input_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input",
+                "--mapping_path", "tests/data/mapping_file.csv", 
+                "--custom_token_dir", "tests/data/custom", 
+                "--important_token_file", "tests/data/important_tokens.txt",
+                "--output_format", "csv"
+                ]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+
+        assert os.path.isfile("tests/data/output/input_processed.csv")
+
+        with open("tests/data/output/input_processed.csv", 'r') as f:
+            content = csv.DictReader(f)
+            for entry in content:
                 assert entry['documentkey'] == '<#CG>'
 
     def test_real_time_test_mask(self):

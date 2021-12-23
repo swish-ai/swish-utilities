@@ -12,6 +12,7 @@ from time import time
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import ConnectionError
 import getpass
+import pandas as pd
 
 from cli_util import DipAuthException, DipException
 
@@ -268,13 +269,11 @@ Total Failed Approximated: {self.total_failed}), Response Time: {response_time} 
                 message = f'Deleted data to maintain JSON format: {deleted}'
                 self.settings.logger.error(message)
                 print(message)
-
-            try:
-                self.write_to_json_file(results, params, 'utf-8')
-            except Exception as e:
-                print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
-
-                self.write_to_json_file(results, params, 'utf-8-sig')
+            
+            if params.extracting.output_format == 'json':
+                self.save_json_file(results, params)
+            if params.extracting.output_format == 'csv':
+                self.save_csv_file(results, params)
 
             message = f'Writing to file COMPLETED SUCCESSFULLY for file:{output_filename}'
             self.settings.logger.info(message)
@@ -284,6 +283,30 @@ Total Failed Approximated: {self.total_failed}), Response Time: {response_time} 
             message = f'Error while saving file. {e}'
             self.settings.logger.exception(message)
             raise DipException(message)
+
+    def save_json_file(self, results, params):
+        try:
+            self.write_to_json_file(results, params, 'utf-8')
+        except Exception as e:
+            print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
+            self.write_to_json_file(results, params, 'utf-8-sig')
+
+    def save_csv_file(self, output_data, params):
+        try:
+            self.write_to_csv_file(output_data, params, 'utf-8')
+        except Exception as e:
+            print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
+            self.write_to_csv_file(output_data, params, 'utf-8-sig')
+
+    def write_to_csv_file(self, results, params, encoding):
+        output_filename = params.output_filename + '.csv'
+        df = pd.DataFrame.from_dict(results)
+        if params.extracting.compress:
+            with gzip.open(output_filename + '.gz', 'wt', encoding=encoding) as file:
+                df.to_csv(file, compression='gzip',index=False)
+        else:
+            with open(output_filename, 'w', encoding=encoding) as file:
+                df.to_csv(file, index=False)
 
     def write_to_json_file(self, results, params, encoding):
 

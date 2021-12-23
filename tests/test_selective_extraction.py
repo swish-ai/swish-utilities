@@ -4,9 +4,10 @@ from click.testing import CliRunner
 from pandas.io.parsers import read_csv
 import requests_mock
 from run import cli, main
-from tests.common import SNOW_RESPONSE1, SNOW_RESPONSE_WITH_CUSTOM_ID, UNITEST_OUTPUT_FILE, UNITEST_OUTPUT_FILE_PREFIX, patch_for_tests
+from tests.common import SNOW_RESPONSE1, SNOW_RESPONSE_WITH_CUSTOM_ID, UNITEST_OUTPUT_FILE, UNITEST_OUTPUT_FILE_CSV, UNITEST_OUTPUT_FILE_PREFIX, patch_for_tests
 import os
 import os.path
+import csv
 
 patch_for_tests()
 
@@ -19,6 +20,9 @@ class SelectiveExtractionTesting(TestCase):
     def setUp(self) -> None:
         if os.path.isfile(UNITEST_OUTPUT_FILE):
             os.remove(UNITEST_OUTPUT_FILE)
+
+        if os.path.isfile(UNITEST_OUTPUT_FILE_CSV):
+            os.remove(UNITEST_OUTPUT_FILE_CSV)
 
     def test_no_filter(self):
         assert not os.path.isfile(
@@ -48,6 +52,34 @@ class SelectiveExtractionTesting(TestCase):
         assert len([d for d in data if d['sys_id'] == '123'])
         assert len([d for d in data if d['sys_id'] == '456'])
         assert not len([d for d in data if d['sys_id'] == '567'])
+    
+    def test_no_filter_to_csv(self):
+        assert not os.path.isfile(
+            UNITEST_OUTPUT_FILE_CSV), "The file should be deleted"
+        mock_session = requests_mock.Mocker()
+        mock_session.register_uri(requests_mock.ANY,
+                                  'https://dev71074.service-now.com/api/now/table/sys_audit',
+                                  text=SNOW_RESPONSE1)
+        mock_session.start()
+
+        args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
+                "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--start_date", "2021-10-03", "--end_date", "2021-10-04", "--output_format", "csv"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+
+        assert os.path.isfile(UNITEST_OUTPUT_FILE_CSV), "No output file found"
+
+        data = []
+        with open(UNITEST_OUTPUT_FILE_CSV, 'r') as f:
+            data = list(csv.DictReader(f))
+            assert len([d for d in data if d['sys_id'] ==
+                    '669009b4874330105fd965f73cbb3533'])
+            assert len([d for d in data if d['sys_id'] == '123'])
+            assert len([d for d in data if d['sys_id'] == '456'])
+            assert not len([d for d in data if d['sys_id'] == '567'])
 
     def test_selective(self):
         assert not os.path.isfile(
