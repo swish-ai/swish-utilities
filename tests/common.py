@@ -5,6 +5,7 @@ patched = False
 
 UNITEST_OUTPUT_FILE_PREFIX = 'extracting_output/__unitest_output'
 UNITEST_OUTPUT_FILE = f'{UNITEST_OUTPUT_FILE_PREFIX}.json'
+UNITEST_OUTPUT_FILE_CSV = f'{UNITEST_OUTPUT_FILE_PREFIX}.csv'
 
 def patch_for_tests():
     global patched

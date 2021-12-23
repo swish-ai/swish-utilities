@@ -67,6 +67,8 @@ def print_version(ctx, param, value):
 @dip_option('--end_date', '-e', help=Help.end_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
             groups=['extracting'])
 @dip_option('--url', '-j', help=Help.url, default=None, groups=['extracting'])
+@dip_option('--output_format', '-of', help=Help.output_format, default='json',
+            choices=['json', 'csv'], groups=['extracting', 'masking'])
 @dip_option('--id_list_path', '-q', help=Help.id_list_path, default='', groups=['extracting'])
 @dip_option('--id_field_name', '-r', help=Help.id_field_name, default='sys_id', groups=['extracting'])
 @dip_option('--data_id_name', '-d', help=Help.data_id_name, default='', groups=['extracting'])
@@ -317,28 +319,28 @@ def cli_file_process(input_file, masker, params, app_settings):
 
     f0 = time()
     output_data = masker(input_file.data, no_pd=True, no_output_json=True)
-    output_filename = os.path.join(params.data.destination_folder,
-                                   input_file.non_extension_part + '_processed.json')
-    input_file.save_data_to_file(output_data, params.data.destination_folder, params)
+    output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
     message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
     click.echo(message)
     app_settings.logger.info(message)
 
 
 def load_json_to_file_obj(file_object):
+    encoding = None
     try:
         # JSON file
-        f = open(file_object.filename, "r", encoding='utf-8')
+        encoding = 'utf-8'
+        f = open(file_object.filename, "r", encoding=encoding)
     except Exception:
         try:
+            encoding = 'latin-1'
             f = open(file_object.filename, "r", encoding='latin-1')
         except Exception:
+            encoding = 'utf-8-sig'
             f = open(file_object.filename, "r", encoding='utf-8-sig')
-
     # Reading from file
-    data = json.loads(f.read())
-
-    # Checking the json structure
+    data = json.loads(f.read(), encoding=encoding)
+    # # Checking the json structure
     if 'records' in data:
         file_object.data = DataFrame(data['records'])
     else:
@@ -379,10 +381,11 @@ def cli_file_read(filename):
 
         except Exception as e:
             click.echo(e.__str__())
+            click.echo(click.style("Failed to pares input file", fg="red"))
 
     except Exception as e:
         message = f"Error parsing {filename}. {e}"
-        click.echo(message)
+        click.echo(click.style(message, fg="red"))
         raise DipException(message)
 
 
