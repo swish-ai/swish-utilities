@@ -30,40 +30,55 @@ class File:
         self.transform_method_button: dict = {}
 
     def save_data_to_file(self, output_data, destination_folder, params):
+        output_filename = None
         try:
-            output_filename = os.path.join(destination_folder,
+            if params.output_format == 'json':
+                output_filename = os.path.join(destination_folder,
                                            self.non_extension_part + '_processed.json')
-            params.output_filename = output_filename
-
-            # if self.ext == 'xlsx':
-            #     output_data.to_excel(r'' + output_filename,
-            #                          encoding='utf-8-sig')
-            # elif self.ext == 'csv':
-            #     try:
-            #         output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='utf-8-sig')
-            #     except Exception:
-            #         try:
-            #             output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='utf-8')
-            #         except Exception:
-            #             output_data.to_csv(r'' + output_filename, index=False, header=True, encoding='latin-1')
-            #
-            # elif self.ext == 'json':
-            try:
-                self.write_to_json_file(output_data, params, 'utf-8')
-            except Exception as e:
-                print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
-                self.write_to_json_file(output_data, params, 'utf-8-sig')
+                params.output_filename = output_filename
+                self.save_json_file(output_data, params)
+            
+            if params.output_format == 'csv':
+                output_filename = os.path.join(destination_folder,
+                                           self.non_extension_part + '_processed.csv')
+                params.output_filename = output_filename
+                self.save_csv_file(output_data, params)
 
         except Exception as e:
             message = f'Error while saving file to: {output_filename}. {e.__str__()}'
             print(message)
             raise DipException(message)
+        return output_filename
+
+    def save_json_file(self, output_data, params):
+        try:
+            self.write_to_json_file(output_data, params, 'utf-8')
+        except Exception as e:
+            print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
+            self.write_to_json_file(output_data, params, 'utf-8-sig')
+
+    def save_csv_file(self, output_data, params):
+        try:
+            self.write_to_csv_file(output_data, params, 'utf-8')
+        except Exception as e:
+            print(e.__str__(), "\n", "Trying utf-8-sig encoding...")
+            self.write_to_csv_file(output_data, params, 'utf-8-sig')
 
     def write_to_json_file(self, results, params, encoding):
-
+        indent = None
+        if params.pretty_json:
+            indent = 4
         if params.compress:
             with gzip.open(params.output_filename + '.gz', 'wt', encoding=encoding) as file:
-                results.to_json(file, force_ascii=False, orient='records', compression='gzip')
+                results.to_json(file, force_ascii=False, orient='records', compression='gzip', indent=indent)
         else:
             with open(params.output_filename, 'w', encoding=encoding) as file:
-                results.to_json(file, force_ascii=False, orient='records')
+                results.to_json(file, force_ascii=False, orient='records', indent=indent)
+
+    def write_to_csv_file(self, results, params, encoding):
+        if params.compress:
+            with gzip.open(params.output_filename + '.gz', 'wt', encoding=encoding) as file:
+                results.to_csv(file, compression='gzip',index=False)
+        else:
+            with open(params.output_filename, 'w', encoding=encoding) as file:
+                results.to_csv(file, index=False)

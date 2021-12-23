@@ -327,7 +327,9 @@ class Masker:
                 column in mapping_file.data['column'].to_list() and \
                 mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
 
-            condition = mapping_file.data[mapping_file.data['column'] == column]['condition'].item()
+            data = mapping_file.data[mapping_file.data['column'] == column]
+            if 'condition' in data:
+                condition = data['condition'].item()
             method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
 
         conditions = []

@@ -44,6 +44,9 @@ pyinstaller --clean --onefile \
     run.py -n swish-utilities
 ```
 
+## building for old linuxes - glibc compatibility
+see [el7-build](el7-build) - using centos:7 images with glibc 2.17
+
 ## references
 - [pyinstaller](https://pyinstaller.readthedocs.io/en/stable/)
 - [Github Action](https://docs.github.com/en/actions)

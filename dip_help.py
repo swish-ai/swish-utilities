@@ -19,6 +19,7 @@ in parallel. The provided interval value is split based on this specification fo
     start_date: str = 'Extraction start date in format YYYY-mm-dd'
     end_date: str = 'Extraction end date in format YYYY-mm-dd'
     url: str = 'Specification of ServiceNow table and filter in RestAPI terminology'
+    output_format: str = 'Format of the created files'
     id_list_path: str = 'Path to filtering file in csv format'
     id_field_name: str = 'Name of field in the filtering file'
     data_id_name: str = 'Name of field in the source data'
@@ -35,3 +36,4 @@ in parallel. The provided interval value is split based on this specification fo
     version: str = 'Prints current version'
     authentication_file = 'Path to file containing authentication data in json format'
     config: str = 'Configuration file for execution with less parameters'
+    pretty_json: str = 'Pretty output json'

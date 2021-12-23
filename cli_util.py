@@ -1,4 +1,5 @@
 import os
+import sys
 import click
 from pandas import DataFrame
 from types import SimpleNamespace
@@ -8,6 +9,7 @@ import pathlib
 GROUPS = {}
 MAIN_GROPUS = {}
 INITIAL = {}
+CHOICES = {}
 MAP_TO = {}
 ALL_OPTIONS = set()
 DC_UTILITIES_DATA_DIR = './dc_utilities_data'
@@ -22,6 +24,19 @@ class DipException(Exception):
 
 class DipAuthException(Exception):
     pass
+
+
+def add_to_group(attrs, param_decls, map_to, name):
+    ALL_OPTIONS.update(param_decls)
+    if "groups" in attrs:
+        groups = attrs["groups"]
+        for g in groups:
+            if map_to:
+                MAP_TO[(g, name)] = map_to
+            GROUPS.setdefault(g, []).append(name)
+        del attrs["groups"]
+        return groups
+    return []
 
 
 def dip_option(*param_decls, **attrs):
@@ -59,14 +74,15 @@ def dip_option(*param_decls, **attrs):
         if x in ALL_OPTIONS:
             raise ValueError(f'{name}: {x} already used')
 
-    ALL_OPTIONS.update(param_decls)
-    if "groups" in attrs:
-        groups = attrs["groups"]
-        for g in groups:
-            if map_to:
-                MAP_TO[(g, name)] = map_to
-            GROUPS.setdefault(g, []).append(name)
-        del attrs["groups"]
+    groups = add_to_group(attrs, param_decls, map_to, name)
+    if "choices" in attrs:
+        choices = attrs['choices']
+        del attrs['choices']
+        for group in groups:
+            d = {}
+            d[name] = choices
+            CHOICES[group] = d
+
     return click.option(*param_decls, **attrs)
 
 
@@ -96,6 +112,7 @@ def add_group(params, name, values, current_groups, kwargs):
     setattr(params, name, opt)
     ns = current_groups[name][0]
     setattr(opt, 'enabled', ns)
+    validate_coices(kwargs, name)
     if name in INITIAL:
         initial = INITIAL[name]
         for key, val in initial.items():
@@ -171,8 +188,17 @@ def load_auth(kwargs):
 def create_data_files_if_needed(kwargs, config_params):
     create_masking_files_if_needed(kwargs, config_params)
 
+def validate_coices(kwargs, group_name):
+    if group_name not in CHOICES:
+        return
+
+    for key, val in CHOICES[group_name].items():
+        if kwargs.get(key) not in val:
+            click.echo(f'Incorrect {key} option. Available options: [{",".join(val)}]')
+            sys.exit(1)
 
 def setup_cli(**kwargs):
+
     # set parameters from config but do not overide manually provided values.
     config_params = get_config_params(kwargs)
     if config_params:
