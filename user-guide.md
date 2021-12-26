@@ -67,6 +67,7 @@ For a more detailed list, see the *Extracting ServiceNow Data* document.
 |--important\_token\_file| -it|| Path to file with names/tokens that will not be masked|
 |--input\_sources| -is|| coma separated filenames or directories containing json|
 |--out\_props\_csv\_path| -op|| Path to output csv containig extracted field set|
+|--output\_format| -of|json| Format of the created files|
 |--config|-cg|| Configuration file for execution with less parameters|
 |--auth_file| -af|| Path to file containing authentication data in json format|
 
