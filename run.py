@@ -45,6 +45,12 @@ def print_version(ctx, param, value):
     click.echo(VERSION)
     ctx.exit()
 
+def manual_override(val, current_groups, kwargs):
+    if val == 'input_dir' and current_groups['extracting'][0] \
+                          and current_groups['masking'][0] \
+                          and kwargs[val] is None:
+        kwargs['input_dir'] = kwargs['output_dir']                         
+
 
 # Put new parameters here v
 @click.command()
@@ -81,6 +87,7 @@ def print_version(ctx, param, value):
 @dip_option('--custom_token_dir', '-ct', help=Help.custom_token_dir, default='', groups=['masking'])
 @dip_option('--important_token_file', '-it', help=Help.important_token_file, default=None, groups=['masking'])
 @dip_option('--input_sources', '-is', help=Help.input_sources, default='', groups=['processing'])
+@dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking'])
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
             groups=['extracting', 'processing'])
 @dip_option('--pretty_json', '-pj', is_flag=True, help=Help.pretty_json, groups=['extracting', 'masking'])
@@ -90,11 +97,16 @@ def print_version(ctx, param, value):
 @click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
 def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
-    params = setup_cli(**kwargs)
-    start = time()
-    exec(params) # NOSONAR
-    elapsed = (time() - start)
-    click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
+    try:
+        params = setup_cli(manual_override, **kwargs)
+        start = time()
+        exec(params) # NOSONAR
+        elapsed = (time() - start)
+        click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
+    except Exception as e:
+        click.echo(click.style(f"{e}", fg="red"))
+        if "pytest" in sys.modules:
+            raise e
 
 
 def exec_extracting(params, app_settings):
@@ -310,7 +322,7 @@ def masking_execute(params, app_settings):
     # Read input files and execute
     input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     for f in input_files:
-        input_file = cli_file_read(os.path.join(params.input_dir, f))
+        input_file = cli_file_read(os.path.join(params.input_dir, f), params.input_encoding)
         params.data.file_objects.append(input_file)
         cli_file_process(input_file, mask_results, params, app_settings)
 
@@ -325,29 +337,40 @@ def cli_file_process(input_file, masker, params, app_settings):
     app_settings.logger.info(message)
 
 
-def load_json_to_file_obj(file_object):
+def load_json_to_file_obj(file_object, encodings):
     encoding = None
-    try:
-        # JSON file
-        encoding = 'utf-8'
-        f = open(file_object.filename, "r", encoding=encoding)
-    except Exception:
+    for enc in encodings:
         try:
-            encoding = 'latin-1'
-            f = open(file_object.filename, "r", encoding='latin-1')
+            f = open(file_object.filename, "r", encoding=enc)
+            encoding = enc
+            # Reading from file
+            data = json.loads(f.read(), encoding=encoding)
+            break
         except Exception:
-            encoding = 'utf-8-sig'
-            f = open(file_object.filename, "r", encoding='utf-8-sig')
-    # Reading from file
-    data = json.loads(f.read(), encoding=encoding)
+            click.echo(click.style(f"Failed to read file {file_object.filename}" +
+                                   f" using encoding {enc}", fg="yellow"))
+    
+    if encoding is None:
+        click.echo(click.style(f"Failed to read file {file_object.filename}", fg="red"))
+        return
+
+    
     # # Checking the json structure
     if 'records' in data:
         file_object.data = DataFrame(data['records'])
     else:
         file_object.data = DataFrame(data)
 
+def get_encodings_list(encoding):
+    encodings = []
+    if encoding is not None:
+        encodings.append(encoding.lower())
+    for enc in ['utf-8', 'latin-1', 'utf-8-sig']:
+        if enc not in encodings:
+            encodings.append(enc)
+    return encodings
 
-def cli_file_read(filename):
+def cli_file_read(filename, encoding = None):
     try:
         view_name = os.path.split(filename)[-1]
         obj = {
@@ -359,6 +382,7 @@ def cli_file_read(filename):
         }
 
         file_object = File(**obj)
+        encodings = get_encodings_list(encoding)
 
         try:
 
@@ -366,16 +390,17 @@ def cli_file_read(filename):
                 file_object.data = read_excel(file_object.filename)
 
             if file_object.ext == 'csv':
-                try:
-                    file_object.data = read_csv(file_object.filename, encoding='utf-8')
-                except Exception:
+                for enc in encodings:
                     try:
-                        file_object.data = read_csv(file_object.filename, encoding='latin-1')
+                        file_object.data = read_csv(file_object.filename, encoding=enc)
+                        break
                     except Exception:
-                        file_object.data = read_csv(file_object.filename, encoding='utf-8-sig')
-
+                        click.echo(click.style(f"Failed to read file {file_object.filename}" +
+                                               f" using encoding {enc}", fg="yellow"))
+                if file_object.data is None:
+                    click.echo(click.style(f"Failed to read file {file_object.filename}", fg="red"))
             if file_object.ext == 'json':
-                load_json_to_file_obj(file_object)
+                load_json_to_file_obj(file_object, encodings)
 
             return file_object
 

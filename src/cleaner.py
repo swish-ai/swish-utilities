@@ -309,9 +309,6 @@ class Masker:
             output_data = pd.json_normalize(items)
         methods = self.methods
         for column in output_data:
-            message = f'Column: {column} | Start", end=" | '
-            print(message)
-
             self.__process_col(output_data, mapping_file, column, methods, cleaner)
 
         if no_output_json:

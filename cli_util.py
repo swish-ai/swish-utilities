@@ -107,7 +107,7 @@ def validate_params(params, type_):
         print(message)
 
 
-def add_group(params, name, values, current_groups, kwargs):
+def add_group(params, name, values, current_groups, kwargs, manual_override):
     opt = SimpleNamespace()
     setattr(params, name, opt)
     ns = current_groups[name][0]
@@ -118,6 +118,7 @@ def add_group(params, name, values, current_groups, kwargs):
         for key, val in initial.items():
             setattr(opt, key, val)
     for val in values:
+        manual_override(val, current_groups, kwargs)
         if kwargs[val] is None and current_groups[name][0]:
             msg = f"Error: --{val} is required with for group option --{current_groups[name][1]}"
             print(msg)
@@ -197,7 +198,7 @@ def validate_coices(kwargs, group_name):
             click.echo(f'Incorrect {key} option. Available options: [{",".join(val)}]')
             sys.exit(1)
 
-def setup_cli(**kwargs):
+def setup_cli(manual_override, **kwargs):
 
     # set parameters from config but do not overide manually provided values.
     config_params = get_config_params(kwargs)
@@ -212,5 +213,5 @@ def setup_cli(**kwargs):
     current_groups = {key: (kwargs[val], val) for key, val in MAIN_GROPUS.items()}
     params = SimpleNamespace()
     for name, values in GROUPS.items():
-        add_group(params, name, values, current_groups, kwargs)
+        add_group(params, name, values, current_groups, kwargs, manual_override)
     return params

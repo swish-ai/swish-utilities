@@ -31,6 +31,7 @@ in parallel. The provided interval value is split based on this specification fo
     important_token_file: str = 'Path to file with names/tokens that will not be masked'
     compress: str = 'Use this flag for applying compression on the files in outpu_dir (during their creation)'
     input_sources: str = 'coma separated filenames or directories containing json'
+    input_encoding: str = 'Encoding of the input data'
     input_dir: str = 'Directory that contains files for masking. The files should not be compressed.'
     output_dir: str = 'Directory that contains files that were created as part of --maks of --extract operation'
     version: str = 'Prints current version'
