@@ -330,11 +330,14 @@ def masking_execute(params, app_settings):
 def cli_file_process(input_file, masker, params, app_settings):
 
     f0 = time()
-    output_data = masker(input_file.data, no_pd=True, no_output_json=True)
-    output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
-    message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
-    click.echo(message)
-    app_settings.logger.info(message)
+    if input_file.data is not None:
+        output_data = masker(input_file.data, no_pd=True, no_output_json=True)
+        output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
+        message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
+        click.echo(message)
+        app_settings.logger.info(message)
+    else:
+        click.echo(click.style(f"File {input_file.filename} can not be processed", fg="red"))
 
 
 def load_json_to_file_obj(file_object, encodings):
