@@ -1,10 +1,13 @@
 ﻿# swish-utilities User Guide
 
 
-Swish Utilities for ServiceNow data retrieval (swish-utilities)
+Swish Utilities for ServiceNow data retrieval and masking of exported ITSM data
 
 
 Introduction
+------------
+
+swish-utilities 
 
 Extraction of data from ServiceNow can be challenging. In some cases our users can retrieve the required data from ServiceNow by themselves. In other cases, particularly for Sys\_Audit extraction, auxiliary utility is required. 
 
