@@ -41,8 +41,11 @@ The provided configuration file may be used instead of providing some input opti
 **Examples**
 
 Masking all the files in input directory based on the configuration file:
-
 swish-utilities --mask --output\_dir output --input\_dir input **--config config.json**
+
+Extract ServiceNow table sys_schedule_span according to the configuration file config.json and the credentials that are stored in auth.json
+swish-utilities  “--extract”  "--url" "https://servicenow_host_name/api/now/table/sys_schedule_span"  **--config config.json** **--auth_file auth.json**
+  
 
 **Config content**
 ```
@@ -79,10 +82,6 @@ swish-utilities --mask --output\_dir output --input\_dir input **--config config
     "out_props_csv_path": null
 }
 ```
-Extract ServiceNow table sys_schedule_span according to the configuration file config.json and the credentials that are stored in auth.json
-**mask_mapping format**
-**--config config.json** 
-
 
 You can provide masking options for columns via mask_mapping entry in the config file.
 **mask_mapping entry attributes:**
@@ -105,13 +104,12 @@ Authentication parameters can be saved in json file.
 }
 ```
 
-**Example**
-Extract ServiceNow table sys_schedule_span according to the configuration file config.json and the credentials that are stored in auth.json
-swish-utilities  “--extract”  "--url" "https://servicenow_host_name/api/now/table/sys_schedule_span"  
-**--config config.json** **--auth_file auth.json**
-
 
 ## swish-utilities options
+
+The following tables shows all the options for coniguration of swish-utiltites.
+Options can be specified in the configuration file or per CLI execution by spefiying values as flags.
+
 |<div style="width:190px">Long</div> |Short|Default Value|Description |
 | :- | :- | :- | :- |
 |--mask| -m|| Mask existing data|
@@ -148,11 +146,10 @@ swish-utilities  “--extract”  "--url" "https://servicenow_host_name/api/now/
 
 ## Examples
 
-In the following section, examples of swish-utilities usage will be provided. In real execution, the customer ServiceNow instance details (hostname) and credentials should be provided. 
 
 <br>
 
-**Masking** 
+**Masking of files in input directory** 
 
 swish-utilities **--mask** --output\_dir output --input\_dir input --mapping\_path mapping\_file.csv --custom\_token\_dir custom --important\_token\_file important\_tokens.txt
 
@@ -165,7 +162,7 @@ swish-utilities  “--extract”  "--url" "https://servicenow_host_name/api/now/
 
 <br>
 
-**Extraction of  incident / change\_request / sc\_task (without masking)**
+**Extraction of ServiceNow incident table (without masking)**
 
 swish-utilities  “--extract”  
 "--url"  "https://servicenow_host_name/api/now/table/incident?Filter=Group=ABC’  
@@ -173,7 +170,7 @@ swish-utilities  “--extract”
 
 <br>
 
-**Extraction of  incident / change\_request / sc\_task (with masking)**
+**Extraction of incident table and apply nasking afterwards **
 
 swish-utilities  “--extract” “--mask”  "--url"  "https://servicenow_host_name/api/now/table/incident’  
 "--username" "USER\_NAME" "--password" "PASSWORD"  "--batch\_size" "10000" "--file\_limit" "50000"   
@@ -181,12 +178,12 @@ swish-utilities  “--extract” “--mask”  "--url"  "https://servicenow_host
 "--mapping\_path"  "mapping\_file.csv"
 "--important\_token\_file"  “important\_tokens.txt"
 
-**Extraction of Sys\_Choice** 
+**Extraction of ServiceNow Sys\_Choice table with filtering as condition in the URL** 
 
 swish-utilities  “--extract” "--url" ""https://SERVICENOW_HOST_NAME/api/now/table/sys_choice?&sysparam_query=inactive=false^language=en" "--username" "USER\_NAME" "--password" "PASSWORD"  "--batch\_size" "10000" "--file\_limit" "50000" 
 
 
-**Extraction of Sys\_Audit (no concurrency)** 
+**Extraction of ServiceNow Sys\_Audit table with configuration as flags ** 
 
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
@@ -197,7 +194,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 
 <br>
 
-**Extraction of Sys\_Audit with creation of csv file of documentkeys set**
+**Extraction of ServiceNow Sys\_Audit with creation of csv file named of documentkeys set**
 
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
@@ -209,7 +206,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 
 <br>
 
-**Extraction of Sys\_Audit with filtering by sys\_id** 
+**Extraction of ServiceNow Sys\_Audit table with filtering by specific records with with sys\_id keys** 
 
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
@@ -232,7 +229,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 
 <br>
 
-**Extraction of Sys\_Audit (with concurrency)** 
+**Extraction of ServiceNow Sys\_Audit table with concurrency** 
 
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
@@ -244,7 +241,7 @@ swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table
 
 <br>
 
-**Extraction of Sys\_Audit (with concurrency and masking)** 
+**Extraction of Sys\_Audit with concurrency and masking configuration as flags** 
 
 swish-utilities "--extract"  "--url" "https://SERVICENOW_HOST_NAME/api/now/table/sys_audit?sysparm_query=tablename=incident“
 "--username" "USER\_NAME" "--password" "PASSWORD"
@@ -314,4 +311,9 @@ Example:
 
 <br>
 
-## Execution with config
+
+## FAQ
+
+*Which RegEx patterns are being used for PII masking?*
+
+
