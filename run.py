@@ -92,7 +92,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--custom_token_dir', '-ct', help=Help.custom_token_dir, default='', groups=['masking'])
 @dip_option('--important_token_file', '-it', help=Help.important_token_file, default=None, groups=['masking'])
 @dip_option('--input_sources', '-is', help=Help.input_sources, default='', groups=['processing'])
-@dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking'])
+@dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking', 'extracting'])
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
             groups=['extracting', 'processing'])
 @dip_option('--pretty_json', '-pj', is_flag=True, help=Help.pretty_json, groups=['extracting', 'masking'])
@@ -104,6 +104,7 @@ def manual_override(val, current_groups, kwargs):
 def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
     try:
+        original_input['input_encoding'] = kwargs['input_encoding']
         params = setup_cli(original_input['args'], manual_override, **kwargs)
         start = time()
         exec(params) # NOSONAR
@@ -174,10 +175,11 @@ def exec(params):
 
 def create_masker(mapping_params):
     important_token_file = None
+    encodings = get_encodings_list(mapping_params.input_encoding)
     if mapping_params.important_token_file:
         assert os.path.isfile(mapping_params.important_token_file), 'important_token_file is not a valid file name'
-        important_token_file = CustomUserFile(mapping_params.important_token_file)
-    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file)
+        important_token_file = CustomUserFile(mapping_params.important_token_file, encodings=encodings)
+    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
     custom_token_dir = mapping_params.custom_token_dir
     directory = mapping_params.custom_token_dir
     custom_tokens_filename_list = []
@@ -309,8 +311,9 @@ def masking_execute(params, app_settings):
     # Assert and read important_token_file if exists
     important_token_file = None
     if params.important_token_file != '':
+        encodings = get_encodings_list(params.input_encoding)
         assert os.path.isfile(params.important_token_file), 'important_token_file is not a valid file name'
-        important_token_file = CustomUserFile(params.important_token_file)
+        important_token_file = CustomUserFile(params.important_token_file, encodings=encodings)
 
     # Assert and read custom_tokens if exist
     if params.custom_token_dir != '':
@@ -319,8 +322,8 @@ def masking_execute(params, app_settings):
                                        if os.path.isfile(os.path.join(params.custom_token_dir, f))]
         for f in custom_tokens_filename_list:
             params.data.custom_tokens_filename_list.append(os.path.join(params.custom_token_dir, f))
-
-    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file)
+    encodings = get_encodings_list(params.input_encoding)
+    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
 
     # Read mandatory files
     mapping_file = cli_file_read(params.mapping_path)
@@ -392,6 +395,10 @@ def cli_file_read(filename, encoding = None):
         "is_cli": True
         }
     file_object = File(**obj)
+    if not os.path.isfile(filename):
+        message = f'File {filename} does not exist'
+        click.echo(click.style(message, fg="red"))
+        raise DipException(message)
     try:
         
 

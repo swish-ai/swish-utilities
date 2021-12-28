@@ -25,27 +25,37 @@ class CorruptedFile(Exception):
 
 
 class CustomUserFile:
-    def __init__(self, filename):
+    def __init__(self, filename, encodings=None):
+
+        if encodings is None:
+            encodings =  ['utf-8', 'latin-1', 'utf-8-sig']
+
         self.filename = filename
 
         self.ext = os.path.split(self.filename)[-1].split(".")[-1]
         self.data: list = []
 
         if self.ext == 'json':
-            self.__load_json()
+            self.__load_json(encodings)
         elif self.ext == 'txt':
-            self.__load_txt()
+            self.__load_txt(encodings)
         elif self.ext == 'csv':
-            self.__load_csv()
+            self.__load_csv(encodings)
         else:
             raise UnsupportedFile("Unsupported file extension, file should be one of (txt,json,csv)")
 
-    def __load_csv(self):
+    def __load_csv(self, encodings):
         try:
-            try:
-                data = read_csv(self.filename, encoding='utf-8')
-            except Exception:
-                data = read_csv(self.filename, encoding='latin-1')
+
+            for enc in encodings:
+                try:
+                    data = read_csv(self.filename, encoding=enc)
+                except Exception as e:
+                    click.echo(click.style(f"Failed to read file {self.filename}" +
+                                   f" using encoding {enc}. Error: {e}", fg="yellow"))
+            if data is None:
+                click.echo(click.style(f"Failed to read file: {self.filename}", fg="red"))
+                return
 
             if "user_custom_tokens" in data.columns:
                 data = data["user_custom_tokens"].values.tolist()
@@ -64,34 +74,36 @@ class CustomUserFile:
         except Exception:
             self.data = None
 
-    def __load_txt(self):
+    def __load_txt(self, encodings):
         try:
-            try:
-                with open(self.filename, "r", encoding='utf-8') as f:
-                    data = f.read()
-
-            except Exception:
-                with open(self.filename, "r", encoding='latin-1') as f:
-                    data = f.read()
+            for enc in encodings:
+                try:
+                    with open(self.filename, "r", encoding=enc) as f:
+                        data = f.read()
+                except Exception as e:
+                    click.echo(click.style(f"Failed to read file {self.filename}" +
+                                   f" using encoding {enc}. Error: {e}", fg="yellow"))
+            if data is None:
+                click.echo(click.style(f"Failed to open file: {self.filename}", fg="red"))
+                return
 
             self.finalize(data)
 
         except Exception:
             self.data = None
 
-    def __load_json(self):
+    def __load_json(self, encodings):
         try:
-            try:
-                with open(self.filename, "r", encoding='utf-8') as f:
-                    data = json.load(f)
-            except Exception:
+            for enc in encodings:
                 try:
-                    with open(self.filename, "r", encoding='latin-1') as f:
-                        data = json.load(f)
-
-                except Exception:
-                    with open(self.filename, "r", encoding='utf-8-sig') as f:
-                        data = json.load(f)
+                    with open(self.filename, "r", encoding=enc) as f:
+                        data = json.load(f, encoding=enc)
+                except Exception as e:
+                    click.echo(click.style(f"Failed to read file {self.filename}" +
+                                   f" using encoding {enc}. Error: {e}", fg="yellow"))
+            if data is None:
+                click.echo(click.style(f"Failed to parse file: {self.filename}", fg="red"))
+                return
 
             if "user_custom_tokens" in data:
                 data = data["user_custom_tokens"]
@@ -127,7 +139,9 @@ class CustomUserFile:
 
 class TextCleaner:
 
-    def __init__(self, custom_tokens_filename_list: None, important_token_file=None):
+    def __init__(self, custom_tokens_filename_list: None, 
+                important_token_file=None,
+                encodings=None):
         """
         Cleaner Class
         compiling regexes and custom tokens file.
@@ -162,7 +176,7 @@ class TextCleaner:
         self.custom_tokens_list = set()
         self.important_tokens_list = set()
         self.set_important_tokens(important_token_file)
-        self.set_custom_tokens(custom_tokens_filename_list)
+        self.set_custom_tokens(custom_tokens_filename_list, encodings=encodings)
 
     def set_important_tokens(self, important_token_file):
 
@@ -174,15 +188,16 @@ class TextCleaner:
         except Exception as error:
             print("Error while extracting important tokens. Info: ", error)
 
-    def set_custom_tokens(self, custom_tokens_filename_list=None):
+    def set_custom_tokens(self, custom_tokens_filename_list=None, encodings = None):
 
         for file in custom_tokens_filename_list:
             if file:
-                custom_tokens = CustomUserFile(filename=file).data
-                custom_tokens = list(dict.fromkeys(custom_tokens))
-                custom_tokens = re.split(r"[\s\.\-]", ' '.join(custom_tokens))
-                custom_tokens = set(map(lambda x: x.lower().strip(), custom_tokens))
-                self.custom_tokens_list.update(custom_tokens)
+                custom_tokens = CustomUserFile(filename=file, encodings=encodings).data
+                if custom_tokens:
+                    custom_tokens = list(dict.fromkeys(custom_tokens))
+                    custom_tokens = re.split(r"[\s\.\-]", ' '.join(custom_tokens))
+                    custom_tokens = set(map(lambda x: x.lower().strip(), custom_tokens))
+                    self.custom_tokens_list.update(custom_tokens)
 
                 print(f"Custom Token Loaded: Unique Count: {self.custom_tokens_list.__len__()}")
             else:
