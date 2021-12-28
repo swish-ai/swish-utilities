@@ -88,7 +88,11 @@ You can provide masking options for columns via mask_mapping entry in the config
 
 **column** - column/property name that should be masked
 
-**method** - mapping method, for now always 2
+**method** - mapping/masking method
+There is 3 mapping methods for column
+1 - Anonymization. Field value will be anonymized completely.
+2 - Masking. Only sensitive information inside the field will be replaced with constant value
+3 - Drop. All column with this name will be deleted.
 
 **condition** - optional parameter that enables conditional masking according to values of another fields in the same entr
 <br>
