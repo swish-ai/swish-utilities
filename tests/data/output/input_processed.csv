@@ -1,0 +1,95 @@
+fieldname,reason,sys_id,newvalue,sys_created_on,documentkey,internal_checkpoint,tablename,user,oldvalue,sys_created_by
+impact,,0078ffd70b2322007518478d83673a31,1,2016-12-12 17:57:00,<#CG>,158f6c16a0b0000001,incident,beth.anglin,2,beth.anglin
+activity_due,,0435402b0b2322007518478d83673a6b,<#P>  20:52:42,2016-12-12 18:52:42,<#CG>,158f6f46a3d0000001,incident,beth.anglin,2016-12-12 19:57:00,beth.anglin
+activity_due,,0478ffd70b2322007518478d83673a31,<#P>  19:57:00,2016-12-12 17:57:00,<#CG>,158f6c16a0b0000001,incident,beth.anglin,,beth.anglin
+active,,0f8de500870330105fd965f73cbb357f,0,2021-10-02 10:38:54,<#CG>,17c4095d8160000001,incident,system,1,system
+activity_due,,1268642b0b2322007518478d83673ac7,<#P>  23:26:36,2016-12-12 21:26:36,<#CG>,158f7814e2f0000001,incident,beth.anglin,2016-12-12 22:43:50,beth.anglin
+comments,,1df0787b0b2322007518478d83673abd,"Hi Joe,
+I've checked in network logs and you were timed out from the VPN at  <#CG>   <#CG>  and  <#CG>  These three times coincide with entries in the exchange server logs showing you lost connection at those same times. The VPN policy is to time out a connection if it hasn't been active in 30 minutes. Please ensure the next time you lose connectivity you are still connected to the VPN.
+
+I'm going to update this incident to resolved. Please let me know if you need any more assistance.",2016-12-13 18:42:25,<#CG>,158fba37cc40000001,incident,david.loo,JOURNAL FIELD ADDITION,david.loo
+assigned_to,,21b4abd70b2322007518478d83673a22,<#CG>,2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,,beth.anglin
+work_notes,,21bb2fd70b2322007518478d83673aa7,Updating incident with correct Configuration item,2016-12-12 17:01:24,<#CG>,158f68e81990000001,incident,beth.anglin,JOURNAL FIELD ADDITION,beth.anglin
+state,,223ab36b0b2322007518478d83673afd,3,2016-12-13 14:43:17,<#CG>,158fac890630000001,incident,david.loo,2,david.loo
+state,,23a8b57645993010c0a05206e0e0f8e6,7,2021-07-16 00:40:57,<#CG>,17aacc261340000001,incident,system,6,system
+active,,23cf92bb0b2322007518478d83673a76,0,2016-12-14 02:46:44,<#CG>,158fd5ee3750000001,incident,employee,1,employee
+hold_reason,,26aec47b0b2322007518478d83673a18,,2016-12-13 16:12:36,<#CG>,158fb1a52e20000001,incident,david.loo,1,david.loo
+state,,29b4abd70b2322007518478d83673a21,2,2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,1,beth.anglin
+subcategory,,2db4abd70b2322007518478d83673a21,email,2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,,beth.anglin
+calendar_duration,,315a9d7b0b2322007518478d83673adc,<#P>  04:23:17,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+closed_by,,33a8f57645993010c0a05206e0e0f832,<#CG>,2021-07-16 00:40:58,<#CG>,17aacc264450000001,incident,system,,system
+task_effective_number,,34083d3e45593010c0a05206e0e0f8c4,<#CG>,2021-07-16 00:38:02,<#CG>,17aacbfb21e0000001,incident,system,,system
+closed_at,,37a8f57645993010c0a05206e0e0f82b,<#P>  00:40:58,2021-07-16 00:40:58,<#CG>,17aacc263ea0000001,incident,system,,system
+incident_state,,37a8f57645993010c0a05206e0e0f870,7,2021-07-16 00:40:58,<#CG>,17aacc264450000001,incident,system,6,system
+priority,,3b88d92b0b2322007518478d83673af0,3,2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,1,beth.anglin
+business_duration,,3d5a9d7b0b2322007518478d83673adb,<#P>  08:00:00,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+comments,,3f2a447b0b2322007518478d83673aa3,"Hi David,
+Thank you! I use the corporate VPN and was also unable to connect to the email server at  <#CG>  and  <#CG>",2016-12-13 15:53:01,<#CG>,158fb0864e10000001,incident,employee,JOURNAL FIELD ADDITION,employee
+reassignment_count,,3f88d92b0b2322007518478d83673af0,2,2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,1,beth.anglin
+incident_state,,3fa8f57645993010c0a05206e0e0f82e,7,2021-07-16 00:40:58,<#CG>,17aacc2641b0000001,incident,system,6,system
+hold_reason,,4035402b0b2322007518478d83673a6b,1,2016-12-12 18:52:42,<#CG>,158f6f46a3d0000001,incident,beth.anglin,,beth.anglin
+priority,,4078ffd70b2322007518478d83673a31,1,2016-12-12 17:57:00,<#CG>,158f6c16a0b0000001,incident,beth.anglin,3,beth.anglin
+comments,,4435402b0b2322007518478d83673a6b,"Hi Joe, 
+Are you connected to the VPN when you're having this issue? Can you identify a specific time you were unable to connect to email?",2016-12-12 18:52:42,<#CG>,158f6f46a3d0000001,incident,beth.anglin,JOURNAL FIELD ADDITION,beth.anglin
+closed_by,,4f8de500870330105fd965f73cbb357f,<#CG>,2021-10-02 10:38:54,<#CG>,17c4095d8160000001,incident,system,,system
+hold_reason,,5e68642b0b2322007518478d83673ac6,,2016-12-12 21:26:36,<#CG>,158f7814e2f0000001,incident,beth.anglin,1,beth.anglin
+comments,,61b4abd70b2322007518478d83673a22,"Hi Joe, 
+My name is Beth and I'll be assisting you with your issue.",2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,JOURNAL FIELD ADDITION,beth.anglin
+incident_state,,623ab36b0b2322007518478d83673afd,3,2016-12-13 14:43:17,<#CG>,158fac890630000001,incident,david.loo,2,david.loo
+active,,63a8b57645993010c0a05206e0e0f8e6,0,2021-07-16 00:40:57,<#CG>,17aacc261340000001,incident,system,1,system
+closed_by,,63cf92bb0b2322007518478d83673a76,<#CG>,2016-12-14 02:46:44,<#CG>,158fd5ee3750000001,incident,employee,,employee
+state,,66aec47b0b2322007518478d83673a18,2,2016-12-13 16:12:36,<#CG>,158fb1a52e20000001,incident,david.loo,3,david.loo
+business_service,,69b4abd70b2322007518478d83673a21,<#CG>,2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,,beth.anglin
+assignment_group,,6db4abd70b2322007518478d83673a21,<#CG>,2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,,beth.anglin
+cmdb_ci,,6dbb2fd70b2322007518478d83673aa6,<#CG>,2016-12-12 17:01:24,<#CG>,158f68e81990000001,incident,beth.anglin,,beth.anglin
+comments,,70a94d7b0b2322007518478d83673aa9,"Hi David, 
+That must be it. I was on phone calls at all three of those times and must not have had any activity on my computer. Please close this incident.",2016-12-13 20:30:14,<#CG>,158fc0634d00000001,incident,employee,JOURNAL FIELD ADDITION,employee
+close_notes,,715a9d7b0b2322007518478d83673adc,This incident is resolved.,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+active,,77a8f57645993010c0a05206e0e0f82b,0,2021-07-16 00:40:58,<#CG>,17aacc263ea0000001,incident,system,1,system
+resolved_by,,795a9d7b0b2322007518478d83673adb,<#CG>,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+work_notes,,7b88d92b0b2322007518478d83673af0,Updating priority as workaround for incident has been provided.,2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,JOURNAL FIELD ADDITION,beth.anglin
+resolved_at,,7d5a9d7b0b2322007518478d83673adb,<#P>  21:43:14,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+assigned_to,,7f88d92b0b2322007518478d83673af0,<#CG>,2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,46d44a23a9fe19810012d100cca80666,beth.anglin
+state,,7fa8f57645993010c0a05206e0e0f831,7,2021-07-16 00:40:58,<#CG>,17aacc264450000001,incident,system,6,system
+state,,8035402b0b2322007518478d83673a6b,3,2016-12-12 18:52:42,<#CG>,158f6f46a3d0000001,incident,beth.anglin,2,beth.anglin
+work_notes,,8078ffd70b2322007518478d83673a31,Increasing priority as this incident is affecting more number of users,2016-12-12 17:57:00,<#CG>,158f6c16a0b0000001,incident,beth.anglin,JOURNAL FIELD ADDITION,beth.anglin
+activity_due,,80aed02b0b2322007518478d83673aef,<#P>  22:43:50,2016-12-12 20:43:50,<#CG>,158f75a28af0000001,incident,employee,2016-12-12 20:52:42,employee
+short_description,,819bfa9d874330105fd965f73cbb356b,test3,2021-10-06 13:32:13,<#CG>,17c55cdf5c90000001,incident,aes.creator,qwertytest  <#SSN>  jjjj,aes.creator
+state,,8b8de500870330105fd965f73cbb357f,7,2021-10-02 10:38:54,<#CG>,17c4095d8160000001,incident,system,6,system
+incident_state,,8f8de500870330105fd965f73cbb357f,7,2021-10-02 10:38:54,<#CG>,17c4095d8160000001,incident,system,6,system
+state,,9e68642b0b2322007518478d83673ac6,2,2016-12-12 21:26:36,<#CG>,158f7814e2f0000001,incident,beth.anglin,3,beth.anglin
+comments,,a23ab36b0b2322007518478d83673afd,"Hi Joe,
+My name is David. I'll be assisting you with this incident. Can you confirm which VPN you have been using today? I also see you were having this issue at  <#CG>  Were there any other times you can recall you had issues connecting to the email?",2016-12-13 14:43:17,<#CG>,158fac890630000001,incident,david.loo,JOURNAL FIELD ADDITION,david.loo
+incident_state,,a3a8b57645993010c0a05206e0e0f8e6,7,2021-07-16 00:40:57,<#CG>,17aacc261340000001,incident,system,6,system
+incident_state,,a3cf92bb0b2322007518478d83673a76,7,2016-12-14 02:46:44,<#CG>,158fd5ee3750000001,incident,employee,6,employee
+incident_state,,a6aec47b0b2322007518478d83673a18,2,2016-12-13 16:12:36,<#CG>,158fb1a52e20000001,incident,david.loo,3,david.loo
+incident_state,,adb4abd70b2322007518478d83673a21,2,2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,1,beth.anglin
+state,,afcf92bb0b2322007518478d83673a75,7,2016-12-14 02:46:44,<#CG>,158fd5ee3750000001,incident,employee,6,employee
+incident_state,,b15a9d7b0b2322007518478d83673adc,6,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,2,david.loo
+closed_by,,b7a8f57645993010c0a05206e0e0f82b,<#CG>,2021-07-16 00:40:58,<#CG>,17aacc263ea0000001,incident,system,,system
+state,,b95a9d7b0b2322007518478d83673adb,6,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,2,david.loo
+assignment_group,,bb88d92b0b2322007518478d83673af0,<#CG>,2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,d625dccec0a8016700a222a0f7900d06,beth.anglin
+state,,bba8f57645993010c0a05206e0e0f82e,7,2021-07-16 00:40:58,<#CG>,17aacc2641b0000001,incident,system,6,system
+state,,bc4603d5878330105fd965f73cbb35e6,2,2021-10-06 14:18:54,<#CG>,17c55f8b1a00000001,incident,admin,1,admin
+close_code,,bd5a9d7b0b2322007518478d83673adb,Solved (Permanently),2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+comments,,bf88d92b0b2322007518478d83673af0,"Hi Joe, 
+As per discussion on call, Workaround has been provided and it has worked for you. I have verified with the Exchange team we haven't had an issue with the email server today. I'm going to assign this issue to the network team for further investigation.",2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,JOURNAL FIELD ADDITION,beth.anglin
+closed_at,,bfa8f57645993010c0a05206e0e0f831,<#P>  00:40:58,2021-07-16 00:40:58,<#CG>,17aacc264450000001,incident,system,,system
+incident_state,,c035402b0b2322007518478d83673a6b,3,2016-12-12 18:52:42,<#CG>,158f6f46a3d0000001,incident,beth.anglin,2,beth.anglin
+urgency,,c078ffd70b2322007518478d83673a31,1,2016-12-12 17:57:00,<#CG>,158f6c16a0b0000001,incident,beth.anglin,2,beth.anglin
+comments,,c0aed02b0b2322007518478d83673aef,"Hi Beth,
+Yes, I'm connected to the VPN, although I've had to reconnect to it a couple of times. The last time I was unable to connect was  <#CG>",2016-12-12 20:43:50,<#CG>,158f75a28af0000001,incident,employee,JOURNAL FIELD ADDITION,employee
+closed_at,,cb8de500870330105fd965f73cbb357f,<#P>  10:38:54,2021-10-02 10:38:54,<#CG>,17c4095d8160000001,incident,system,,system
+incident_state,,de68642b0b2322007518478d83673ac6,2,2016-12-12 21:26:36,<#CG>,158f7814e2f0000001,incident,beth.anglin,3,beth.anglin
+reassignment_count,,edb4abd70b2322007518478d83673a21,1,2016-12-12 16:30:49,<#CG>,158f67281f30000001,incident,beth.anglin,0,beth.anglin
+hold_reason,,ee3ab36b0b2322007518478d83673afc,1,2016-12-13 14:43:17,<#CG>,158fac890630000001,incident,david.loo,,david.loo
+closed_at,,efcf92bb0b2322007518478d83673a75,<#P>  02:46:44,2016-12-14 02:46:44,<#CG>,158fd5ee3750000001,incident,employee,,employee
+state,,f3a8f57645993010c0a05206e0e0f82b,7,2021-07-16 00:40:58,<#CG>,17aacc263ea0000001,incident,system,6,system
+impact,,f788d92b0b2322007518478d83673af0,2,2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,1,beth.anglin
+incident_state,,f7a8f57645993010c0a05206e0e0f82b,7,2021-07-16 00:40:58,<#CG>,17aacc263ea0000001,incident,system,6,system
+calendar_stc,,f95a9d7b0b2322007518478d83673adb,<#>,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+urgency,,fb88d92b0b2322007518478d83673af0,2,2016-12-13 00:56:57,<#CG>,158f841e5200000001,incident,beth.anglin,1,beth.anglin
+active,,fba8f57645993010c0a05206e0e0f82e,0,2021-07-16 00:40:58,<#CG>,17aacc2641b0000001,incident,system,1,system
+incident_state,,fc4603d5878330105fd965f73cbb35e6,2,2021-10-06 14:18:54,<#CG>,17c55f8b1a00000001,incident,admin,1,admin
+business_stc,,fd5a9d7b0b2322007518478d83673adb,28800,2016-12-13 21:43:14,<#CG>,158fc4907400000001,incident,david.loo,,david.loo
+active,,ffa8f57645993010c0a05206e0e0f831,0,2021-07-16 00:40:58,<#CG>,17aacc264450000001,incident,system,1,system

@@ -1,0 +1,149 @@
+[{
+	"id": 12,
+	"del": 0,
+	"enum": 100,
+	"sym": "תא 99",
+	"nx_desc": "תא 99"
+}, {
+	"id": 14,
+	"del": 0,
+	"enum": 14,
+	"sym": "מפגע בטיחות",
+	"nx_desc": "מפגע בטיחות"
+}, {
+	"id": 15,
+	"del": 0,
+	"enum": 15,
+	"sym": "גבוהה",
+	"nx_desc": "פגיעה עסקית חמורה",
+	"last_mod_dt": 1467019342,
+	"last_mod_by": "HprvMfZ+vki9XaxujVdxVQ=="
+}, {
+	"id": 16,
+	"del": 0,
+	"enum": 16,
+	"sym": "לקוח בסניף",
+	"nx_desc": "לקוח בסניף"
+}, {
+	"id": 55,
+	"del": 0,
+	"enum": 55,
+	"sym": "תא 55",
+	"nx_desc": "תא 55"
+}, {
+	"id": 95,
+	"del": 1,
+	"enum": 95,
+	"sym": "תא 95",
+	"nx_desc": "תא 95"
+}, {
+	"id": 800,
+	"del": 0,
+	"enum": 0,
+	"sym": "אין השבתה",
+	"nx_desc": "אין השבתה",
+	"last_mod_dt": 1229604453,
+	"last_mod_by": "ouu+25jhNUC9btLmGRHEiw=="
+}, {
+	"id": 801,
+	"del": 0,
+	"enum": 1,
+	"sym": "השבתת עמדה",
+	"nx_desc": "השבתת עמדה",
+	"last_mod_dt": 1229604524,
+	"last_mod_by": "ouu+25jhNUC9btLmGRHEiw=="
+}, {
+	"id": 802,
+	"del": 0,
+	"enum": 2,
+	"sym": "השבתת סניף",
+	"nx_desc": "השבתת סניף",
+	"last_mod_dt": 1229604507,
+	"last_mod_by": "ouu+25jhNUC9btLmGRHEiw=="
+}, {
+	"id": 803,
+	"del": 1,
+	"enum": 3,
+	"sym": "השבתת עד 3 ס",
+	"nx_desc": "MEDIUM-HIGH Severity"
+}, {
+	"id": 804,
+	"del": 1,
+	"enum": 4,
+	"sym": "בעיה רוחבית",
+	"nx_desc": "בעיה רוחבית",
+	"last_mod_dt": 1369127144,
+	"last_mod_by": "qHK3YbonN0+lu6iBJ6gTdQ=="
+}, {
+	"id": 400002,
+	"del": 0,
+	"enum": 5,
+	"sym": "השבתת יחידה",
+	"nx_desc": "השבתת יחידה",
+	"last_mod_dt": 1360239163,
+	"last_mod_by": "ouu+25jhNUC9btLmGRHEiw=="
+}, {
+	"id": 400003,
+	"del": 1,
+	"enum": 6,
+	"sym": "מערכת מטה",
+	"nx_desc": "השבתה מערכת מטה",
+	"last_mod_dt": 1229604574,
+	"last_mod_by": "ouu+25jhNUC9btLmGRHEiw=="
+}, {
+	"id": 400004,
+	"del": 0,
+	"enum": 7,
+	"sym": "מערכת קריטית",
+	"nx_desc": "השבתה מערכת קריטית",
+	"last_mod_dt": 1229604557,
+	"last_mod_by": "ouu+25jhNUC9btLmGRHEiw=="
+}, {
+	"id": 400005,
+	"del": 0,
+	"enum": 8,
+	"sym": "השבתת קלע",
+	"nx_desc": "השבתת קלע",
+	"last_mod_dt": 1273666792,
+	"last_mod_by": "qHK3YbonN0+lu6iBJ6gTdQ=="
+}, {
+	"id": 400006,
+	"del": 0,
+	"enum": 9,
+	"sym": "קריטית",
+	"nx_desc": "עצירת עסקה",
+	"last_mod_dt": 1467019320,
+	"last_mod_by": "HprvMfZ+vki9XaxujVdxVQ=="
+}, {
+	"id": 400007,
+	"del": 0,
+	"enum": 10,
+	"sym": "אירוע משבית",
+	"nx_desc": "אירוע משבית"
+}, {
+	"id": 400008,
+	"del": 1,
+	"enum": 11,
+	"sym": "מסחר",
+	"nx_desc": "מסחר"
+}, {
+	"id": 400009,
+	"del": 0,
+	"enum": 17,
+	"sym": "בינונית",
+	"nx_desc": "בינונית"
+}, {
+	"id": 400010,
+	"del": 0,
+	"enum": 18,
+	"sym ": "נמוכה",
+	"nx_desc": "נמוכה"
+}, {
+	"id ": 400011,
+	"del": 0,
+	"enum ": 19,
+	"sym": "ללא מייל",
+	"nx_desc": "ללא מייל",
+	"last_mod_dt": 1509877280,
+	"last_mod_by": "HprvMfZ + vki9XaxujVdxVQ == "
+}]
