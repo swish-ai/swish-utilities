@@ -5,6 +5,7 @@ import sys
 import os
 import json
 import threading
+import traceback
 
 from datetime import datetime, timedelta
 from cli_util import DipException, dip_option, setup_cli
@@ -23,11 +24,15 @@ try:
 except:  # NOSONAR
     VERSION = 'dev'
 
+original_input = {}
 
 # ENUMS
 MASK: int = 2
 ANONYMIZE: int = 1
-NONE_ACTION: int = 3
+DROP: int = 3
+
+#excel loader extensions
+EXCELS = ['xls', 'xlsx', 'xlsb', 'xlsm', 'odf', 'ods',  'odt']
 
 mask_data = {'data': (SimpleNamespace(
     user_selected_file_list={},
@@ -44,6 +49,12 @@ def print_version(ctx, param, value):
         return
     click.echo(VERSION)
     ctx.exit()
+
+def manual_override(val, current_groups, kwargs):
+    if val == 'input_dir' and current_groups['extracting'][0] \
+                          and current_groups['masking'][0] \
+                          and kwargs[val] is None:
+        kwargs['input_dir'] = kwargs['output_dir']                         
 
 
 # Put new parameters here v
@@ -81,6 +92,7 @@ def print_version(ctx, param, value):
 @dip_option('--custom_token_dir', '-ct', help=Help.custom_token_dir, default='', groups=['masking'])
 @dip_option('--important_token_file', '-it', help=Help.important_token_file, default=None, groups=['masking'])
 @dip_option('--input_sources', '-is', help=Help.input_sources, default='', groups=['processing'])
+@dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking', 'extracting'])
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
             groups=['extracting', 'processing'])
 @dip_option('--pretty_json', '-pj', is_flag=True, help=Help.pretty_json, groups=['extracting', 'masking'])
@@ -88,13 +100,22 @@ def print_version(ctx, param, value):
               expose_value=False, is_eager=True)
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
 @click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
+@click.option('--debug', '-dg', help=Help.debug, is_flag=True)
 def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
-    params = setup_cli(**kwargs)
-    start = time()
-    exec(params) # NOSONAR
-    elapsed = (time() - start)
-    click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
+    try:
+        original_input['input_encoding'] = kwargs['input_encoding']
+        params = setup_cli(original_input['args'], manual_override, **kwargs)
+        start = time()
+        exec(params) # NOSONAR
+        elapsed = (time() - start)
+        click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
+    except Exception as e:
+        if kwargs['debug']:
+            print(traceback.format_exc())
+        click.echo(click.style(f"{e}", fg="red"))
+        if "pytest" in sys.modules:
+            raise e
 
 
 def exec_extracting(params, app_settings):
@@ -154,10 +175,11 @@ def exec(params):
 
 def create_masker(mapping_params):
     important_token_file = None
+    encodings = get_encodings_list(mapping_params.input_encoding)
     if mapping_params.important_token_file:
         assert os.path.isfile(mapping_params.important_token_file), 'important_token_file is not a valid file name'
-        important_token_file = CustomUserFile(mapping_params.important_token_file)
-    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file)
+        important_token_file = CustomUserFile(mapping_params.important_token_file, encodings=encodings)
+    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
     custom_token_dir = mapping_params.custom_token_dir
     directory = mapping_params.custom_token_dir
     custom_tokens_filename_list = []
@@ -170,7 +192,8 @@ def create_masker(mapping_params):
         '(--mapping_path) mapping file is not a valid file name'
     mapping_file = cli_file_read(mapping_params.mapping_path)
 
-    return Masker(cleaner, mapping_file, custom_tokens_filename_list, anonymize_value=ANONYMIZE, mask_value=MASK)
+    return Masker(cleaner, mapping_file, custom_tokens_filename_list, 
+                  anonymize_value=ANONYMIZE, mask_value=MASK, drop_value=DROP)
 
 
 def extracting_execute(params, app_settings, filter_by_column, data_proccessor, mask_results):
@@ -288,8 +311,9 @@ def masking_execute(params, app_settings):
     # Assert and read important_token_file if exists
     important_token_file = None
     if params.important_token_file != '':
+        encodings = get_encodings_list(params.input_encoding)
         assert os.path.isfile(params.important_token_file), 'important_token_file is not a valid file name'
-        important_token_file = CustomUserFile(params.important_token_file)
+        important_token_file = CustomUserFile(params.important_token_file, encodings=encodings)
 
     # Assert and read custom_tokens if exist
     if params.custom_token_dir != '':
@@ -298,8 +322,8 @@ def masking_execute(params, app_settings):
                                        if os.path.isfile(os.path.join(params.custom_token_dir, f))]
         for f in custom_tokens_filename_list:
             params.data.custom_tokens_filename_list.append(os.path.join(params.custom_token_dir, f))
-
-    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file)
+    encodings = get_encodings_list(params.input_encoding)
+    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
 
     # Read mandatory files
     mapping_file = cli_file_read(params.mapping_path)
@@ -310,7 +334,7 @@ def masking_execute(params, app_settings):
     # Read input files and execute
     input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     for f in input_files:
-        input_file = cli_file_read(os.path.join(params.input_dir, f))
+        input_file = cli_file_read(os.path.join(params.input_dir, f), params.input_encoding)
         params.data.file_objects.append(input_file)
         cli_file_process(input_file, mask_results, params, app_settings)
 
@@ -318,86 +342,112 @@ def masking_execute(params, app_settings):
 def cli_file_process(input_file, masker, params, app_settings):
 
     f0 = time()
-    output_data = masker(input_file.data, no_pd=True, no_output_json=True)
-    output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
-    message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
-    click.echo(message)
-    app_settings.logger.info(message)
+    if input_file.data is not None:
+        output_data = masker(input_file.data, no_pd=True, no_output_json=True)
+        output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
+        message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
+        click.echo(message)
+        app_settings.logger.info(message)
+    else:
+        click.echo(click.style(f"File {input_file.filename} can not be processed", fg="red"))
 
 
-def load_json_to_file_obj(file_object):
+def load_json_to_file_obj(file_object, encodings):
     encoding = None
-    try:
-        # JSON file
-        encoding = 'utf-8'
-        f = open(file_object.filename, "r", encoding=encoding)
-    except Exception:
+    for enc in encodings:
         try:
-            encoding = 'latin-1'
-            f = open(file_object.filename, "r", encoding='latin-1')
-        except Exception:
-            encoding = 'utf-8-sig'
-            f = open(file_object.filename, "r", encoding='utf-8-sig')
-    # Reading from file
-    data = json.loads(f.read(), encoding=encoding)
+            f = open(file_object.filename, "r", encoding=enc)
+            # Reading from file
+            data = json.loads(f.read(), encoding=encoding)
+            encoding = enc
+            break
+        except Exception as e:
+            click.echo(click.style(f"Failed to read file {file_object.filename}" +
+                                   f" using encoding {enc}. Error: {e}", fg="yellow"))
+    
+    if encoding is None:
+        click.echo(click.style(f"Failed to read file {file_object.filename}", fg="red"))
+        return
+
+    
     # # Checking the json structure
     if 'records' in data:
         file_object.data = DataFrame(data['records'])
     else:
         file_object.data = DataFrame(data)
 
+def get_encodings_list(encoding):
+    encodings = []
+    if encoding is not None:
+        encodings.append(encoding.lower())
+    for enc in ['utf-8', 'latin-1', 'utf-8-sig']:
+        if enc not in encodings:
+            encodings.append(enc)
+    return encodings
 
-def cli_file_read(filename):
-    try:
-        view_name = os.path.split(filename)[-1]
-        obj = {
-            "selected": True,
-            "filename": filename,
-            "ext": filename.split('.')[-1],
-            "view_name": view_name,
-            "is_cli": True
+def cli_file_read(filename, encoding = None):
+    view_name = os.path.split(filename)[-1]
+    obj = {
+        "selected": True,
+        "filename": filename,
+        "ext": filename.split('.')[-1],
+        "view_name": view_name,
+        "is_cli": True
         }
+    file_object = File(**obj)
+    if not os.path.isfile(filename):
+        message = f'File {filename} does not exist'
+        click.echo(click.style(message, fg="red"))
+        raise DipException(message)
+    try:
+        
 
-        file_object = File(**obj)
+        encodings = get_encodings_list(encoding)
 
         try:
-
-            if file_object.ext == 'xlsx':
+            if file_object.ext in EXCELS:
                 file_object.data = read_excel(file_object.filename)
 
             if file_object.ext == 'csv':
-                try:
-                    file_object.data = read_csv(file_object.filename, encoding='utf-8')
-                except Exception:
+                for enc in encodings:
                     try:
-                        file_object.data = read_csv(file_object.filename, encoding='latin-1')
+                        file_object.data = read_csv(file_object.filename, encoding=enc)
+                        break
                     except Exception:
-                        file_object.data = read_csv(file_object.filename, encoding='utf-8-sig')
-
+                        click.echo(click.style(f"Failed to read file {file_object.filename}" +
+                                               f" using encoding {enc}", fg="yellow"))
+                if file_object.data is None:
+                    click.echo(click.style(f"Failed to read file {file_object.filename}", fg="red"))
             if file_object.ext == 'json':
-                load_json_to_file_obj(file_object)
-
-            return file_object
+                load_json_to_file_obj(file_object, encodings)
 
         except Exception as e:
             click.echo(e.__str__())
-            click.echo(click.style("Failed to pares input file", fg="red"))
+            click.echo(click.style(f"Failed to pares input file {file_object.filename}. Error: {e}", fg="red"))
 
     except Exception as e:
         message = f"Error parsing {filename}. {e}"
         click.echo(click.style(message, fg="red"))
         raise DipException(message)
 
+    return file_object
+
 
 def main(args):
+    global original_input
+    original_input['args'] = args
     try:
         cli.main(args)
     except Exception as e:
         click.echo(e)
 
-
-if __name__ == '__main__':
+def cli_exec():
+    global original_input
+    original_input['args'] = sys.argv
     if len(sys.argv) == 1:
         cli.main(['--help'])
     else:
         cli()
+
+if __name__ == '__main__':
+    cli_exec()

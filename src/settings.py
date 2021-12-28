@@ -9,13 +9,15 @@ class Settings():
 
     def __init__(self, id):
         # Files and Path global variable
+        if not os.path.isdir('logs'):
+            os.mkdir('logs')
         self.logger = None
         self.initial_timestamp = None
         self.initial_timestamp = datetime.now().isoformat().replace(".", "").replace(":", "_") + "_" + str(id)
 
         level = logging.INFO
         self.logger_name = f'log_{self.initial_timestamp}'
-        self.log_file = f'log_{self.initial_timestamp}.log'
+        self.log_file = os.path.join('logs', f'log_{self.initial_timestamp}.log')
         self.logger = logging.getLogger(self.logger_name)
         formatter = logging.Formatter('%(asctime)s : %(message)s')
         file_handler = logging.FileHandler(self.log_file, mode='w')

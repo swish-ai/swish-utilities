@@ -71,6 +71,7 @@ class FilteringTestCase(TestCase):
             jsn = json.load(f)
             for entry in jsn:
                 assert entry['documentkey'] == '<#CG>'
+                assert 'record_checkpoint' not in entry
     
     def test_mask_to_csv(self):
 

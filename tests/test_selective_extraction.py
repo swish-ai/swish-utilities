@@ -198,10 +198,10 @@ class SelectiveExtractionTesting(TestCase):
     def test_file_doesnt_exist(self):
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
-                "--start_date", "2021-10-03", "--end_date", "2021-10-04", "--id_list_path", "qwqweqweqweqew"]
+                "--start_date", "2021-10-03", "--end_date", "2021-10-04", "--id_list_path", "qwqweqweqweqew.txt"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
         print(result.output)
         assert result.exit_code == 0
         assert not os.path.isfile(
-            UNITEST_OUTPUT_FILE), "The file should be deleted"
+            UNITEST_OUTPUT_FILE), "The file should not exist"
