@@ -12,6 +12,7 @@ INITIAL = {}
 CHOICES = {}
 MAP_TO = {}
 ALL_OPTIONS = set()
+ALL_COMMANDS_PARAMETERS = {}
 DC_UTILITIES_DATA_DIR = './dc_utilities_data'
 DC_UTILITIES_MAPPING_FILE = os.path.join(DC_UTILITIES_DATA_DIR, 'mapping_file.csv')
 DC_UTILITIES_IMORTANT_TOKEN_FILE = os.path.join(DC_UTILITIES_DATA_DIR, 'important_token_file.txt')
@@ -52,10 +53,14 @@ def dip_option(*param_decls, **attrs):
     if "ns" in attrs:
         ns = attrs["ns"]
         del attrs["ns"]
+
+    short_name = next(x for x in param_decls if x.startswith('-') and not x.startswith('--'))
     name = next(x for x in param_decls if x.startswith('--'))
     if name is None:
-        name = next(x for x in param_decls if x.startswith('-'))
+        name = short_name
+    long_name = name
     name = name.replace('-', '')
+    ALL_COMMANDS_PARAMETERS[name] = (long_name, short_name)
     if ns is not None and name is not None:
         MAIN_GROPUS[ns] = name
 
@@ -107,7 +112,7 @@ def validate_params(params, type_):
         print(message)
 
 
-def add_group(params, name, values, current_groups, kwargs):
+def add_group(params, name, values, current_groups, kwargs, manual_override):
     opt = SimpleNamespace()
     setattr(params, name, opt)
     ns = current_groups[name][0]
@@ -118,6 +123,7 @@ def add_group(params, name, values, current_groups, kwargs):
         for key, val in initial.items():
             setattr(opt, key, val)
     for val in values:
+        manual_override(val, current_groups, kwargs)
         if kwargs[val] is None and current_groups[name][0]:
             msg = f"Error: --{val} is required with for group option --{current_groups[name][1]}"
             print(msg)
@@ -197,20 +203,35 @@ def validate_coices(kwargs, group_name):
             click.echo(f'Incorrect {key} option. Available options: [{",".join(val)}]')
             sys.exit(1)
 
-def setup_cli(**kwargs):
 
+def update_params_with_config(original_input, kwargs):  # NOSONAR
     # set parameters from config but do not overide manually provided values.
+    #Config file logic:
+    # If parameter in config but also provided via cli, use cli value
+    # If parameter in config and not provided via cli, use config value
+    # If parameter not in config, use cli or default value
     config_params = get_config_params(kwargs)
     if config_params:
         for key, val in config_params.items():
-            if key in kwargs and not kwargs[key]:
-                kwargs[key] = val
+            if key in ALL_COMMANDS_PARAMETERS:
+                lst = ALL_COMMANDS_PARAMETERS[key]
+                provided = False
+                for n in lst:
+                    if n in original_input:
+                        provided = True
+                        break
+                if key in kwargs and not provided:
+                    kwargs[key] = val
         create_data_files_if_needed(kwargs, config_params)
 
+
+def setup_cli(original_input, manual_override, **kwargs):
+
+    update_params_with_config(original_input, kwargs)
     load_auth(kwargs)
 
     current_groups = {key: (kwargs[val], val) for key, val in MAIN_GROPUS.items()}
     params = SimpleNamespace()
     for name, values in GROUPS.items():
-        add_group(params, name, values, current_groups, kwargs)
+        add_group(params, name, values, current_groups, kwargs, manual_override)
     return params

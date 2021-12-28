@@ -1,16 +1,27 @@
 from src.extractor_resource import Extractor
 from logging import FileHandler
+from click.testing import CliRunner
+from run import original_input
 
 patched = False
+src_invole = False
 
 UNITEST_OUTPUT_FILE_PREFIX = 'extracting_output/__unitest_output'
 UNITEST_OUTPUT_FILE = f'{UNITEST_OUTPUT_FILE_PREFIX}.json'
 UNITEST_OUTPUT_FILE_CSV = f'{UNITEST_OUTPUT_FILE_PREFIX}.csv'
 
+def invoke_patched(self, cli, args, catch_exceptions=False):
+    original_input['args'] = args
+    return src_invole(self, cli, args, catch_exceptions=catch_exceptions)
+
 def patch_for_tests():
     global patched
     if patched:
         return
+    global src_invole
+    if CliRunner.invoke != invoke_patched:
+        src_invole = CliRunner.invoke
+        CliRunner.invoke = invoke_patched
     FileHandler._open = lambda a: None 
     # monkeypatch  to prevent files creation
     FileHandler._open = lambda a: None 
