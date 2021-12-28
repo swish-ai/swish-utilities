@@ -38,3 +38,4 @@ in parallel. The provided interval value is split based on this specification fo
     authentication_file = 'Path to file containing authentication data in json format'
     config: str = 'Configuration file for execution with less parameters'
     pretty_json: str = 'Pretty output json'
+    debug: str = 'Print some debug output'

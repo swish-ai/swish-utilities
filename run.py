@@ -5,6 +5,7 @@ import sys
 import os
 import json
 import threading
+import traceback
 
 from datetime import datetime, timedelta
 from cli_util import DipException, dip_option, setup_cli
@@ -23,11 +24,15 @@ try:
 except:  # NOSONAR
     VERSION = 'dev'
 
+original_input = {}
 
 # ENUMS
 MASK: int = 2
 ANONYMIZE: int = 1
-NONE_ACTION: int = 3
+DROP: int = 3
+
+#excel loader extensions
+EXCELS = ['xls', 'xlsx', 'xlsb', 'xlsm', 'odf', 'ods',  'odt']
 
 mask_data = {'data': (SimpleNamespace(
     user_selected_file_list={},
@@ -95,15 +100,18 @@ def manual_override(val, current_groups, kwargs):
               expose_value=False, is_eager=True)
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
 @click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
+@click.option('--debug', '-dg', help=Help.debug, is_flag=True)
 def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
     try:
-        params = setup_cli(manual_override, **kwargs)
+        params = setup_cli(original_input['args'], manual_override, **kwargs)
         start = time()
         exec(params) # NOSONAR
         elapsed = (time() - start)
         click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
     except Exception as e:
+        if kwargs['debug']:
+            print(traceback.format_exc())
         click.echo(click.style(f"{e}", fg="red"))
         if "pytest" in sys.modules:
             raise e
@@ -182,7 +190,8 @@ def create_masker(mapping_params):
         '(--mapping_path) mapping file is not a valid file name'
     mapping_file = cli_file_read(mapping_params.mapping_path)
 
-    return Masker(cleaner, mapping_file, custom_tokens_filename_list, anonymize_value=ANONYMIZE, mask_value=MASK)
+    return Masker(cleaner, mapping_file, custom_tokens_filename_list, 
+                  anonymize_value=ANONYMIZE, mask_value=MASK, drop_value=DROP)
 
 
 def extracting_execute(params, app_settings, filter_by_column, data_proccessor, mask_results):
@@ -345,13 +354,13 @@ def load_json_to_file_obj(file_object, encodings):
     for enc in encodings:
         try:
             f = open(file_object.filename, "r", encoding=enc)
-            encoding = enc
             # Reading from file
             data = json.loads(f.read(), encoding=encoding)
+            encoding = enc
             break
-        except Exception:
+        except Exception as e:
             click.echo(click.style(f"Failed to read file {file_object.filename}" +
-                                   f" using encoding {enc}", fg="yellow"))
+                                   f" using encoding {enc}. Error: {e}", fg="yellow"))
     
     if encoding is None:
         click.echo(click.style(f"Failed to read file {file_object.filename}", fg="red"))
@@ -374,22 +383,22 @@ def get_encodings_list(encoding):
     return encodings
 
 def cli_file_read(filename, encoding = None):
-    try:
-        view_name = os.path.split(filename)[-1]
-        obj = {
-            "selected": True,
-            "filename": filename,
-            "ext": filename.split('.')[-1],
-            "view_name": view_name,
-            "is_cli": True
+    view_name = os.path.split(filename)[-1]
+    obj = {
+        "selected": True,
+        "filename": filename,
+        "ext": filename.split('.')[-1],
+        "view_name": view_name,
+        "is_cli": True
         }
+    file_object = File(**obj)
+    try:
+        
 
-        file_object = File(**obj)
         encodings = get_encodings_list(encoding)
 
         try:
-
-            if file_object.ext == 'xlsx':
+            if file_object.ext in EXCELS:
                 file_object.data = read_excel(file_object.filename)
 
             if file_object.ext == 'csv':
@@ -405,27 +414,33 @@ def cli_file_read(filename, encoding = None):
             if file_object.ext == 'json':
                 load_json_to_file_obj(file_object, encodings)
 
-            return file_object
-
         except Exception as e:
             click.echo(e.__str__())
-            click.echo(click.style("Failed to pares input file", fg="red"))
+            click.echo(click.style(f"Failed to pares input file {file_object.filename}. Error: {e}", fg="red"))
 
     except Exception as e:
         message = f"Error parsing {filename}. {e}"
         click.echo(click.style(message, fg="red"))
         raise DipException(message)
 
+    return file_object
+
 
 def main(args):
+    global original_input
+    original_input['args'] = args
     try:
         cli.main(args)
     except Exception as e:
         click.echo(e)
 
-
-if __name__ == '__main__':
+def cli_exec():
+    global original_input
+    original_input['args'] = sys.argv
     if len(sys.argv) == 1:
         cli.main(['--help'])
     else:
         cli()
+
+if __name__ == '__main__':
+    cli_exec()

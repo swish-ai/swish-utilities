@@ -290,12 +290,14 @@ class TextCleaner:
 
 
 class Masker:
-    def __init__(self, cleaner, mapping_file, custom_tokens_filename_list, anonymize_value, mask_value):
+    def __init__(self, cleaner, mapping_file, custom_tokens_filename_list, anonymize_value, 
+                 mask_value, drop_value):
         self.cleaner: TextCleaner = cleaner
         self.mapping_file = mapping_file
         self.custom_tokens_filename_list = custom_tokens_filename_list
         self.methods = {'ANONYMIZE': anonymize_value,
-                        'MASK': mask_value}
+                        'MASK': mask_value,
+                        'DROP': drop_value}
 
     def __call__(self, items, no_pd=False, no_output_json=False):
         if not no_pd and not items:
@@ -340,3 +342,5 @@ class Masker:
             output_data[column] = cleaner.transform_with_condition(output_data, column, conditions)
         if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
             output_data[column] = cleaner.anonymize(output_data[column].values.tolist())
+        if 'DROP' in methods and method == methods['DROP']:
+            output_data.drop(column, axis=1, inplace=True)
