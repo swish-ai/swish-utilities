@@ -240,9 +240,9 @@ class TextCleaner:
     def clean_custom_tokens_chunk(self, x, no_clean=False):
         if no_clean:
             return x
+        x = self.__words.sub(self.__replace_confident, x)
         if self.custom_tokens_list:
             x = self._flashtext_names.replace_keywords(x).strip()
-        x = self.__words.sub(self.__replace_confident, x)
 
         return x.strip()
 
