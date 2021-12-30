@@ -52,13 +52,13 @@ swish-utilities  “--extract”  "--url" "https://servicenow_host_name/api/now/
 {
     "mask_mapping": [
         {
-          "column": "documentkey","method": 2
+          "column": "documentkey","method": 1
         },
         {
-            "column": "oldvalue","method": 2,"condition": "fieldname=short_description|fieldname=fieldname"
+            "column": "oldvalue","method": 2,"condition": "fieldname=short_description"
         },
         {
-            "column": "newvalue","method": 2,"condition": "fieldname=short_description|fieldname=fieldname"
+            "column": "newvalue","method": 2,"condition": "fieldname=short_description"
         }
     ],
     "custom_token":[],
@@ -94,7 +94,7 @@ There are 3 mapping methods for column<br>
 2 - Masking. Only sensitive information inside the field will be replaced with constant value<br>
 3 - Drop. All column with this name will be deleted.<br>
 
-**condition** - optional parameter that enables conditional masking according to values of another fields in the same entr
+**condition** - Optional parameter that enables conditional masking according to the values of other fields in the same entry
 <br>
 
 ## Authentication file
@@ -143,6 +143,7 @@ Options can be specified in the configuration file or per CLI execution by speci
 |--input\_sources| -is|| coma separated filenames or directories containing json|
 |--out\_props\_csv\_path| -op|| Path to output csv containig extracted field set|
 |--output\_format| -of|json| Format of the created files|
+|input_encoding| ie|UTF-8|Encoding of the input data files|
 |--config|-cg|| Configuration file for execution with less parameters|
 |--auth_file| -af|| Path to file containing authentication data in json format|
 
