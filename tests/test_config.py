@@ -76,6 +76,17 @@ class FilteringTestCase(TestCase):
                 jsn2 = json.load(f)
                 for i, entry in enumerate(jsn2):
                     assert jsn[i]['sys_created_by'] == sha256(entry['sys_created_by'].encode('utf-8')).hexdigest()
+                    # test conditional anonymization
+                    if jsn2[i]['fieldname'] == 'state':
+                        assert jsn[i]['record_checkpoint'] == sha256(entry['record_checkpoint'].encode('utf-8')).hexdigest()
+                    else:
+                        assert jsn[i]['record_checkpoint'] == entry['record_checkpoint']
+
+                    # test conditional method
+                    if jsn2[i]['fieldname'] == 'short_description':
+                        assert jsn[i]['tablename'] == entry['tablename']
+                    elif jsn2[i]['fieldname'] == 'state':
+                        assert jsn[i]['tablename'] == sha256(entry['tablename'].encode('utf-8')).hexdigest()
 
 
     

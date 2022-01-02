@@ -4,13 +4,19 @@
 			"column": "documentkey","method": 2
 		},
         {
-            "column": "oldvalue","method": 2,"condition": "fieldname=short_description|fieldname=fieldname"
+            "column": "oldvalue","method": 2,"condition": "fieldname=short_description"
         },
         {
-            "column": "newvalue","method": 2,"condition": "fieldname=short_description|fieldname=fieldname"
+            "column": "newvalue","method": 2,"condition": "fieldname=short_description"
         },
 		{
 			"column": "sys_created_by", "method": 1
+		},
+		{
+			"column": "tablename", "method": "fieldname=short_description;2|fieldname=state;1"
+		},
+		{
+			"column": "record_checkpoint", "method": 1, "condition": "fieldname=state"
 		}
     ],
     "custom_token":[],
