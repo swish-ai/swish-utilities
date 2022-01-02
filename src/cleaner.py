@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import os
 import json
 import re
@@ -5,6 +6,7 @@ import click
 import pandas as pd
 from hashlib import sha256
 from pandas import read_csv, DataFrame
+from cli_util import DipException
 from src import settings
 
 from flashtext import KeywordProcessor
@@ -13,6 +15,9 @@ split_compiled = re.compile(r"\n|\s")
 
 WORDS_REGEX = r'([^\s-]|[.]|[@-])+'
 
+MASK: int = 2
+ANONYMIZE: int = 1
+DROP: int = 3
 
 class UnsupportedFile(Exception):
     """Raised when CustomUserFile selected unsupported type"""
@@ -253,27 +258,43 @@ class TextCleaner:
             click.echo(click.style(f"There was an Error while masking {e}", fg="red"))
         return res
 
-    def anonymize(self, data: list) -> list:
+    def __cond_masker(self, item):
+        d, method = item
+        if method == MASK:
+            return self.clean_custom_tokens_chunk(d)
+        if method == ANONYMIZE:
+            return sha256(str(d).encode('utf-8')).hexdigest()
+        if method == DROP:
+            return None
+        return d
+
+    def condition_clean(self, df, cond_methos, column):
+        data = []
+        for index, row in df.iterrows():
+            method = None
+            for xx in cond_methos:
+                cond_metho:MethodCondition = xx
+                if row[cond_metho.col_name] == cond_metho.val:
+                    method = cond_metho.method
+                    break
+            data.append((row[column], method))
+
+        return list(map(self.__cond_masker, data))
+
+    def anonymize(self, data: list, no_clean=None) -> list:
+        if no_clean is None:
+            return list(map(lambda x: sha256(str(x).encode('utf-8')).hexdigest() if x and not pd.isna(x) and x != 'nan' else x, data))
         try:
-            res = list(map(lambda x: sha256(x.encode('utf-8')).hexdigest() if x and not pd.isna(x) and x != 'nan' else x, data))
+            res = list(map(lambda x: sha256(str(x[1]).encode('utf-8')).hexdigest() if x[1] and not pd.isna(x[1]) and x[1] != 'nan' and not no_clean[x[0]] else x[1], enumerate(data)))
         except Exception as e:
             click.echo(click.style(f"There was an Error while anonymizing {e}", fg="red"))
 
         return res
 
-    def transform_with_condition(self, df, column, conditions):
-        if not conditions:
-            return self.transform(df[column].values.tolist())
+    def transform_with_condition(self, data, no_clean=None):
+        if no_clean is None:
+            return self.transform(data)
 
-        data = df[column].values.tolist()
-        no_clean = [True] * len(data)
-        for condition in conditions:
-            c_column, val = condition
-            val = str(val)
-            c_data = df[c_column].values.tolist()
-            for i, c in enumerate(c_data):
-                if str(c) == val:
-                    no_clean[i] = False
         return [self.clean_custom_tokens_chunk(x, no_clean[i]) for i, x in enumerate(data)]
 
     def is_custom_loaded(self) -> bool:
@@ -302,6 +323,12 @@ class TextCleaner:
         x = self.__custom_tokens.sub(' <#User> ', x)
         x = self.__space.sub(' ', x)
         return x.strip()
+
+@dataclass
+class MethodCondition:
+    method:float
+    col_name:str
+    val:object
 
 
 class Masker:
@@ -333,6 +360,18 @@ class Masker:
 
         return output_data.to_dict(orient="records")
 
+    def __get_condition_method(self, m, col):
+        if not m:
+            raise DipException(f'Bad conditional method for column {col}')
+        res = []
+        parts = m.split('|')
+        for part in parts:
+            if '=' in part:
+                key, val = part.split('=')
+                f, method = val.split(';')
+                res.append(MethodCondition(float(method), key, f))
+        return res
+
     def __process_col(self, output_data, mapping_file, column, methods, cleaner):
         method = None
         condition = None
@@ -345,17 +384,38 @@ class Masker:
             if 'condition' in data:
                 condition = data['condition'].item()
             method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
+        cond_method = None
+        if method is not None:
+            try:
+                method = float(method)
+            except:
+                cond_method = self.__get_condition_method(method, column)
 
         conditions = []
         if condition and not pd.isna(condition) and condition != 'nan':
             parts = [p.strip() for p in condition.split('|') if p.strip()]
             for part in parts:
                 conditions.append(part.split('='))
+        no_clean = None
+        if conditions:
+            all_column = output_data[column].values.tolist()
+            # if condition provided, set default to not applying it (no_clean) until we found that condition is truly
+            no_clean = [True] * len(all_column)
+            for condition in conditions:
+                c_column, val = condition
+                val = str(val)
+                c_data = output_data[c_column].values.tolist()
+                for i, c in enumerate(c_data):
+                    if str(c) == val:
+                        no_clean[i] = False
 
-        if 'MASK' in methods and method == methods['MASK']:
-            output_data[column] = output_data[column].fillna('')
-            output_data[column] = cleaner.transform_with_condition(output_data, column, conditions)
-        if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
-            output_data[column] = cleaner.anonymize(output_data[column].values.tolist())
-        if 'DROP' in methods and method == methods['DROP']:
-            output_data.drop(column, axis=1, inplace=True)
+        if cond_method:
+            output_data[column] = cleaner.condition_clean(output_data, cond_method, column)
+        else:
+            if 'MASK' in methods and method == methods['MASK']:
+                output_data[column] = output_data[column].fillna('')
+                output_data[column] = cleaner.transform_with_condition(output_data[column].values.tolist(), no_clean)
+            if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
+                output_data[column] = cleaner.anonymize(output_data[column].values.tolist(), no_clean)
+            if 'DROP' in methods and method == methods['DROP']:
+                output_data.drop(column, axis=1, inplace=True)
