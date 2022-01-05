@@ -219,44 +219,52 @@ class TextCleaner:
         return self.custom_tokens_list
 
     def __replace_confident(self, match):
-        x = match.group()
-        if self.__special.search(x):
-            return ''
-        if self.__ssn.search(x):
-            return '\1 <#SSN> \3'
-        if self.__ip.search(x):
-            return ' <#I> '
-        if self.__url.search(x):
-            return ' <#U> '
-        if self.__cc.search(x):
-            return ' <#CC> '
-        if self.__email.search(x):
-            return ' <#M> '
-        if self.__phone.search(x):
-            return ' <#P> '
-        if self.__catalog.search(x):
-            return ' <#CG> '
-        if self.__numbers.search(x):
-            return ' <#> '
-        if self.__space.search(x):
-            return ' '
-        return x
+        try:
+            x = match.group()
+            if self.__special.search(x):
+                return ''
+            if self.__ssn.search(x):
+                return '\1 <#SSN> \3'
+            if self.__ip.search(x):
+                return ' <#I> '
+            if self.__url.search(x):
+                return ' <#U> '
+            if self.__cc.search(x):
+                return ' <#CC> '
+            if self.__email.search(x):
+                return ' <#M> '
+            if self.__phone.search(x):
+                return ' <#P> '
+            if self.__catalog.search(x):
+                return ' <#CG> '
+            if self.__numbers.search(x):
+                return ' <#> '
+            if self.__space.search(x):
+                return ' '
+            return x
+        except Exception as e:
+            click.echo(click.style(f"There was an Error while masking {x} {e}", fg="red"))
+            return '<MASK_PROBLEM>'
 
     def clean_custom_tokens_chunk(self, x, no_clean=False):
-        if no_clean:
-            return x
-        x = self.__words.sub(self.__replace_confident, x)
-        if self.custom_tokens_list:
-            x = self._flashtext_names.replace_keywords(x).strip()
+        try:
+            if no_clean:
+                return x
+            x = self.__words.sub(self.__replace_confident, x)
+            if self.custom_tokens_list:
+                x = self._flashtext_names.replace_keywords(x).strip()
 
-        return x.strip()
+            return x.strip()
+        except Exception as e:
+            click.echo(click.style(f"Masking Error {e}", fg="red"))
+            return 'MASKING ERROR'
 
     def transform(self, data: list) -> list:
         try:
-            res = list(map(lambda x: self.clean_custom_tokens_chunk(x), data))
+            return list(map(lambda x: self.clean_custom_tokens_chunk(x), data))
         except Exception as e:
             click.echo(click.style(f"There was an Error while masking {e}", fg="red"))
-        return res
+        return data
 
     def __cond_masker(self, item):
         d, method = item
@@ -281,15 +289,23 @@ class TextCleaner:
 
         return list(map(self.__cond_masker, data))
 
+    @staticmethod
+    def anonymize_value(x):
+        try:
+            return sha256(str(x).encode('utf-8')).hexdigest()
+        except Exception as e:
+            click.echo(click.style(f"There was an Error while anonymizing {x}", fg="red"))
+        return 'anonymizing_error'
+
     def anonymize(self, data: list, no_clean=None) -> list:
         if no_clean is None:
-            return list(map(lambda x: sha256(str(x).encode('utf-8')).hexdigest() if x and not pd.isna(x) and x != 'nan' else x, data))
+            return list(map(lambda x: TextCleaner.anonymize_value(x) if x and not pd.isna(x) and x != 'nan' else x, data))
         try:
-            res = list(map(lambda x: sha256(str(x[1]).encode('utf-8')).hexdigest() if x[1] and not pd.isna(x[1]) and x[1] != 'nan' and not no_clean[x[0]] else x[1], enumerate(data)))
+            return list(map(lambda x: TextCleaner.anonymize_value(x[1]) if x[1] and not pd.isna(x[1]) and x[1] != 'nan' and not no_clean[x[0]] else x[1], enumerate(data)))
         except Exception as e:
             click.echo(click.style(f"There was an Error while anonymizing {e}", fg="red"))
 
-        return res
+        return data
 
     def transform_with_condition(self, data, no_clean=None):
         if no_clean is None:
