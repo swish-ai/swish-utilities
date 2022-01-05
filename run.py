@@ -223,7 +223,7 @@ def extracting_execute(params, app_settings, filter_by_column, data_proccessor, 
 
             message = f'Total Added: {api_resource.total_added}, Total Failed Approximated: {api_resource.total_failed}'
             app_settings.logger.info(message)
-            click.echo(message)
+            click.echo(click.style(message, fg="bright_magenta", underline=True))
 
     except Exception as error:
         message = f'Execution Error: {error}'
@@ -294,7 +294,7 @@ def extracting_multithreading_execution(params, app_settings, filter_by_column, 
 
     message = f'Total Added: {total_added}, Total Failed Approximated: {total_failed}'
     app_settings.logger.info(message)
-    click.echo(message)
+    click.echo(click.style(message, fg="bright_magenta", underline=True))
 
 
 def masking_execute(params, app_settings):
