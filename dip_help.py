@@ -35,6 +35,7 @@ in parallel. The provided interval value is split based on this specification fo
     input_dir: str = 'Directory that contains files for masking. The files should not be compressed.'
     csv_chunk_size:str = 'Performance parameter, used to set maximum chunk size for csv file masking'
     output_dir: str = 'Directory that contains files that were created as part of --maks of --extract operation'
+    pattern:str = 'Custom pattern for replacements'
     version: str = 'Prints current version'
     authentication_file = 'Path to file containing authentication data in json format'
     config: str = 'Configuration file for execution with less parameters'

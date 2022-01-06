@@ -19,6 +19,7 @@
 			"column": "record_checkpoint", "method": 1, "condition": "fieldname=state"
 		}
     ],
+	"pattern": ["(?i)secret[\\S]*:<#UNKNOWN>", "(?i)company[\\S]*:<#SOMETHING>"],
     "custom_token":[],
     "custom_token_dir": "",
     "important_tokens": [],

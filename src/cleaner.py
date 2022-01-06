@@ -15,6 +15,7 @@ split_compiled = re.compile(r"\n|\s")
 
 WORDS_REGEX = r'([^\s-]|[.]|[@-])+'
 MA_MARK = '<#MASKING_ERROR>'
+USER_CUSTOM = '<#USER_CUSTOM>'
 
 MASK: int = 2
 ANONYMIZE: int = 1
@@ -147,11 +148,12 @@ class TextCleaner:
 
     def __init__(self, custom_tokens_filename_list: None, 
                 important_token_file=None,
-                encodings=None):
+                encodings=None, patterns=None):
         """
         Cleaner Class
         compiling regexes and custom tokens file.
         """
+        self.user_patterns = self.create_user_patterns(patterns)
         self._custom_tokens_chunk = None
         self._flashtext_names = KeywordProcessor(case_sensitive=False)
 
@@ -183,6 +185,19 @@ class TextCleaner:
         self.important_tokens_list = set()
         self.set_important_tokens(important_token_file)
         self.set_custom_tokens(custom_tokens_filename_list, encodings=encodings)
+    
+    def create_user_patterns(self, patterns):
+        res = []
+        if not patterns:
+            return res
+        for pattern in patterns:
+            parts = pattern.rsplit(":", 1)
+            ptrn = re.compile(parts[0])
+            if len(parts) == 2:
+                res.append((ptrn, parts[1]))
+            else:
+                res.append((ptrn, USER_CUSTOM))
+        return res
 
     def set_important_tokens(self, important_token_file):
 
@@ -242,6 +257,9 @@ class TextCleaner:
                 return ' <#> '
             if self.__space.search(x):
                 return ' '
+            for pattern, replace in self.user_patterns:
+                if pattern.search(x):
+                    return replace
             return x
         except Exception as e:
             click.echo(click.style(f"There was an Error while masking {x} {e}", fg="red"))
