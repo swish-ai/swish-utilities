@@ -99,6 +99,8 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking', 'extracting'])
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
             groups=['extracting', 'processing'])
+@dip_option('--pattern', '-pt', help=Help.input_encoding, default=[], 
+            groups=['masking', 'extracting'], multiple=True)
 @dip_option('--pretty_json', '-pj', is_flag=True, help=Help.pretty_json, groups=['extracting', 'masking'])
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
@@ -183,7 +185,8 @@ def create_masker(mapping_params):
     if mapping_params.important_token_file:
         assert os.path.isfile(mapping_params.important_token_file), 'important_token_file is not a valid file name'
         important_token_file = CustomUserFile(mapping_params.important_token_file, encodings=encodings)
-    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
+    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file,
+                          encodings=encodings, patterns=mapping_params.pattern)
     custom_token_dir = mapping_params.custom_token_dir
     directory = mapping_params.custom_token_dir
     custom_tokens_filename_list = []
@@ -327,7 +330,8 @@ def masking_execute(params, app_settings):
         for f in custom_tokens_filename_list:
             params.data.custom_tokens_filename_list.append(os.path.join(params.custom_token_dir, f))
     encodings = get_encodings_list(params.input_encoding)
-    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
+    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file,
+                                      encodings=encodings, patterns=params.pattern)
 
     # Read mandatory files
     mapping_file = cli_file_read(params.mapping_path)

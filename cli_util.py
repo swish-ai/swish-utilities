@@ -220,8 +220,14 @@ def update_params_with_config(original_input, kwargs):  # NOSONAR
                     if n in original_input:
                         provided = True
                         break
-                if key in kwargs and not provided:
-                    kwargs[key] = val
+                if key in kwargs:
+                    if not provided:
+                        kwargs[key] = val
+                    else:
+                        if key == 'pattern':
+                            if val is None:
+                                val = []
+                            kwargs[key] = list(kwargs[key]) + val
         create_data_files_if_needed(kwargs, config_params)
 
 
