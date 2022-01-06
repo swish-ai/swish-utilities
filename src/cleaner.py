@@ -14,6 +14,7 @@ from flashtext import KeywordProcessor
 split_compiled = re.compile(r"\n|\s")
 
 WORDS_REGEX = r'([^\s-]|[.]|[@-])+'
+MA_MARK = '<#MASKING_ERROR>'
 
 MASK: int = 2
 ANONYMIZE: int = 1
@@ -247,6 +248,7 @@ class TextCleaner:
             return '<MASK_PROBLEM>'
 
     def clean_custom_tokens_chunk(self, x, no_clean=False):
+        x = str(x)
         try:
             if no_clean:
                 return x
@@ -256,8 +258,8 @@ class TextCleaner:
 
             return x.strip()
         except Exception as e:
-            click.echo(click.style(f"Masking Error {e}", fg="red"))
-            return 'MASKING ERROR'
+            click.echo(click.style(f"Masking Error {e} for entry {x} returning {MA_MARK}", fg="red"))
+            return MA_MARK
 
     def transform(self, data: list) -> list:
         try:

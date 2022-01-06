@@ -60,6 +60,7 @@ __unitest_output.json
 build/
 extracting_output/
 processing_output/
+tests/data/output/
 run.spec
 qwerty.csv
 dock_ids.csv

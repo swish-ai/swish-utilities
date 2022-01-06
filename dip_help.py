@@ -33,6 +33,7 @@ in parallel. The provided interval value is split based on this specification fo
     input_sources: str = 'coma separated filenames or directories containing json'
     input_encoding: str = 'Encoding of the input data'
     input_dir: str = 'Directory that contains files for masking. The files should not be compressed.'
+    csv_chunk_size:str = 'Performance parameter, used to set maximum chunk size for csv file masking'
     output_dir: str = 'Directory that contains files that were created as part of --maks of --extract operation'
     version: str = 'Prints current version'
     authentication_file = 'Path to file containing authentication data in json format'
