@@ -13,6 +13,8 @@ class File:
         self.ext = ext
         self.selected = selected
         self.cleaner = None
+        self.chunked = False
+        self.current_chunk = 0
 
         # Extras
         try:
@@ -72,13 +74,27 @@ class File:
             with gzip.open(params.output_filename + '.gz', 'wt', encoding=encoding) as file:
                 results.to_json(file, force_ascii=False, orient='records', compression='gzip', indent=indent)
         else:
-            with open(params.output_filename, 'w', encoding=encoding) as file:
-                results.to_json(file, force_ascii=False, orient='records', indent=indent)
+            if self.current_chunk == 0:
+                with open(params.output_filename, 'w', encoding=encoding) as file:
+                    results.to_json(file, force_ascii=False, orient='records', indent=indent)
+            else:
+                with open(params.output_filename, 'r') as file:
+                    jsn = json.load(file) 
+                    new_json = json.loads(results.to_json(force_ascii=False,
+                                                      orient='records',
+                                                      indent=indent), encoding=encoding)
+                    jsn = jsn + new_json
+                with open(params.output_filename, 'w', encoding=encoding) as file:
+                    json.dump(jsn, file)
+        self.current_chunk += 1
 
     def write_to_csv_file(self, results, params, encoding):
-        if params.compress:
+        if params.compress and not self.chunked:
             with gzip.open(params.output_filename + '.gz', 'wt', encoding=encoding) as file:
                 results.to_csv(file, compression='gzip',index=False)
         else:
-            with open(params.output_filename, 'w', encoding=encoding) as file:
-                results.to_csv(file, index=False)
+            if self.current_chunk == 0:
+                results.to_csv(params.output_filename, index=False)
+            else:
+                results.to_csv(params.output_filename, mode='a', header=False, index=False)
+            self.current_chunk += 1
