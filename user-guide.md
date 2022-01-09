@@ -43,6 +43,13 @@ The provided configuration file may be used instead of providing some input opti
 Masking all the files in input directory based on the configuration file:
 swish-utilities --mask --output\_dir output --input\_dir input **--config config.json**
 
+(?i)secret[\\S]*:<#UNKNOWN>", "(?i)company[\\S]*:<#SOMETHING>
+
+Masking with custom patterns:
+swish-utilities --mask --pattern "(?i)secret[\S]*:<#UNKNOWN>" --pattern "(?i)company[\S]*:<#SOMETHING>" --output\_dir output --input\_dir input --config config.json
+Will replace all words that start with secret (case insensitive) with <#UNKNOWN>
+and words that start with company (case insensitive) with <#SOMETHING>.
+
 Extract ServiceNow table sys_schedule_span according to the configuration file config.json and the credentials that are stored in auth.json
 swish-utilities  “--extract”  "--url" "https://servicenow_host_name/api/now/table/sys_schedule_span"  **--config config.json** **--auth_file auth.json**
   
@@ -143,7 +150,8 @@ Options can be specified in the configuration file or per CLI execution by speci
 |--input\_sources| -is|| coma separated filenames or directories containing json|
 |--out\_props\_csv\_path| -op|| Path to output csv containig extracted field set|
 |--output\_format| -of|json| Format of the created files|
-|input_encoding| ie|UTF-8|Encoding of the input data files|
+|input_encoding| -ie|UTF-8|Encoding of the input data files|
+|--pattern| -pt||Custom pattern for replacements in masking(2) mapping method. Can be used multiple times. Regex format should be compliant with python re library|
 |--config|-cg|| Configuration file for execution with less parameters|
 |--auth_file| -af|| Path to file containing authentication data in json format|
 
