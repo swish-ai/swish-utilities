@@ -91,6 +91,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--out_prop_name', '-o', help=Help.out_prop_name, default='documentkey',
             groups=['extracting', 'processing'])
 @dip_option('--input_dir', '-id', help=Help.input_dir, default=None, groups=['masking'])
+@dip_option('--input_file', '-if', help=Help.input_file, default='', groups=['masking'])
 @dip_option('--csv_chunk_size', '-cs', help=Help.csv_chunk_size, default=10000, groups=['masking'])
 @dip_option('--mapping_path', '-mp', help=Help.mapping_path, default=None, groups=['masking'])
 @dip_option('--custom_token_dir', '-ct', help=Help.custom_token_dir, default='', groups=['masking'])
@@ -314,6 +315,9 @@ def masking_execute(params, app_settings):
     assert os.path.isdir(params.input_dir), 'input file is not a valid directory name'
     assert os.path.isfile(params.mapping_path), 'mapping file is not a valid file name'
     assert os.path.isdir(params.output_dir), 'output_dir is not a valid directory name'
+    if params.input_file:
+        input_file_path = os.path.join(params.input_dir, params.input_file)
+        assert os.path.isfile(input_file_path), 'input_file does not exist'
 
     # Assert and read important_token_file if exists
     important_token_file = None
@@ -340,7 +344,10 @@ def masking_execute(params, app_settings):
 
     mask_results = create_masker(params)
     # Read input files and execute
-    input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
+    if params.input_file:
+        input_files = [params.input_file]
+    else:
+        input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     for f in input_files:
         input_file = cli_file_read(os.path.join(params.input_dir, f), params.input_encoding,
                                                 csv_chunk=params.csv_chunk_size)
@@ -358,6 +365,9 @@ def cli_file_process(input_file, masker, params, app_settings):
         if not input_file.chunked:
             data = [data]
         for chunk in data:
+            chunk = chunk.convert_dtypes(convert_boolean=False,
+                                         convert_string=False)
+
             output_data = masker(chunk, no_pd=True, no_output_json=True)
             output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
         message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
