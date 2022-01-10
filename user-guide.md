@@ -100,6 +100,17 @@ There are 3 mapping methods for column<br>
 1 - Anonymization. Field value will be anonymized completely.<br>
 2 - Masking. Only sensitive information inside the field will be replaced with constant value<br>
 3 - Drop. All column with this name will be deleted.<br>
+4 - Filter rows that column value not in provided condition. Condition should contain space separated values.
+
+Exapmle config entie:
+```
+...
+{
+    "column": "fieldname","method": 4, "condition": "incident_state comments closed_at"
+}
+...
+```
+
 
 **condition** - Optional parameter that enables conditional masking according to the values of other fields in the same entry
 <br>
@@ -165,6 +176,15 @@ Options can be specified in the configuration file or per CLI execution by speci
 - **Masking of files in input directory** 
 
 swish-utilities **--mask** --output\_dir output --input\_dir input --mapping\_path mapping\_file.csv --custom\_token\_dir custom --important\_token\_file important\_tokens.txt
+
+- **Masking with white list**
+  swish-utilities --mask --output\_dir output --input\_dir input --mapping\_path mapping\_file.csv --custom\_token\_dir custom --important\_token\_file important\_tokens.txt \
+  **--white\_list fieldname** \
+  **--white\_list reason** \
+  **--white\_list sys_id**
+
+<br>
+The Output data will contain only 3 columns fieldname, reason and sys_id
 
 <br>
 

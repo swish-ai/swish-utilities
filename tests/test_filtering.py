@@ -97,6 +97,31 @@ class FilteringTestCase(TestCase):
 
         for entry in jsn:
             assert entry['documentkey'] == 'Very <#UNKNOWN> info about <#SOMETHING>'
+
+    def test_white_list_mask(self):
+        if os.path.isfile("tests/data/output/input_processed.json"):
+            os.remove("tests/data/output/input_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input/",
+                "--mapping_path", "tests/data/mapping_file.csv", 
+                "--custom_token_dir", "tests/data/custom", 
+                "--important_token_file", "tests/data/important_tokens.txt",
+                "--white_list", "fieldname",
+                "--white_list", "reason",
+                "--white_list", "sys_id"
+                ]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_processed.json")
+
+        with open("tests/data/output/input_processed.json", 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                for key in entry:
+                    assert key in ["fieldname", "reason", "sys_id"]
     
     def test_csv_mask(self):
 

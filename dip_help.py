@@ -32,6 +32,7 @@ in parallel. The provided interval value is split based on this specification fo
     compress: str = 'Use this flag for applying compression on the files in outpu_dir (during their creation)'
     input_sources: str = 'coma separated filenames or directories containing json'
     input_encoding: str = 'Encoding of the input data'
+    white_list:str = 'List of columns for output. If not specified all the columns will be used for output'
     input_dir: str = 'Directory that contains files for masking. The files should not be compressed.'
     input_file: str = 'Specific file name inside input_dir. If specified this is the only file that will be masked.'
     csv_chunk_size:str = 'Performance parameter, used to set maximum chunk size for csv file masking'
