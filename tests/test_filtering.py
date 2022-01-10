@@ -73,6 +73,103 @@ class FilteringTestCase(TestCase):
                 assert entry['documentkey'] == '<#CG>'
                 assert 'record_checkpoint' not in entry
     
+    def test_mask_with_patterns(self):
+
+        if os.path.isfile("tests/data/output/input_pattern_processed.json"):
+            os.remove("tests/data/output/input_pattern_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output",
+                "--pattern", "(?i)secret[\\S]*:<#UNKNOWN>",
+                "--pattern", "(?i)company[\\S]*:<#SOMETHING>",
+                "--output_format", "csv",
+                "--input_dir", "tests/data/input_pattern",
+                "--mapping_path", "tests/data/mapping_file.csv", 
+                "--custom_token_dir", "tests/data/custom", 
+                "--important_token_file", "tests/data/important_tokens.txt"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+
+        assert os.path.isfile("tests/data/output/input_pattern_processed.csv")
+        df = read_csv("tests/data/output/input_pattern_processed.csv", encoding="UTF-8")
+        jsn = json.loads(df.to_json(orient='records'))
+
+        for entry in jsn:
+            assert entry['documentkey'] == 'Very <#UNKNOWN> info about <#SOMETHING>'
+    
+    def test_csv_mask(self):
+
+        if os.path.isfile("tests/data/output/input_csv_processed.csv"):
+            os.remove("tests/data/output/input_csv_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--output_format", "csv",
+                "--input_dir", "tests/data/input_csv",
+                "--mapping_path", "tests/data/mapping_file.csv", 
+                "--custom_token_dir", "tests/data/custom", 
+                "--important_token_file", "tests/data/important_tokens.txt"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+
+        assert os.path.isfile("tests/data/output/input_csv_processed.csv")
+        df = read_csv("tests/data/output/input_csv_processed.csv", encoding="UTF-8")
+        jsn = json.loads(df.to_json(orient='records'))
+        assert len(jsn) == 84
+        for entry in jsn:
+            assert entry['documentkey'] == '<#CG>'
+            assert 'record_checkpoint' not in entry
+
+    def test_csv_mask_with_cunksize(self):
+
+        if os.path.isfile("tests/data/output/input_csv_processed.csv"):
+            os.remove("tests/data/output/input_csv_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--output_format", "csv", "--csv_chunk_size", "2",
+                "--input_dir", "tests/data/input_csv",
+                "--mapping_path", "tests/data/mapping_file.csv", 
+                "--custom_token_dir", "tests/data/custom", 
+                "--important_token_file", "tests/data/important_tokens.txt"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+
+        assert os.path.isfile("tests/data/output/input_csv_processed.csv")
+        df = read_csv("tests/data/output/input_csv_processed.csv", encoding="UTF-8")
+        jsn = json.loads(df.to_json(orient='records'))
+        assert len(jsn) == 84
+        for entry in jsn:
+            assert entry['documentkey'] == '<#CG>'
+            assert 'record_checkpoint' not in entry
+
+    def test_csv_mask_with_cunksize_and_json_output(self):
+
+        if os.path.isfile("tests/data/output/input_csv_processed.json"):
+            os.remove("tests/data/output/input_csv_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output",
+                "--output_format", "json", "--csv_chunk_size", "2",
+                "--input_dir", "tests/data/input_csv",
+                "--mapping_path", "tests/data/mapping_file.csv", 
+                "--custom_token_dir", "tests/data/custom", 
+                "--important_token_file", "tests/data/important_tokens.txt"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+
+        assert os.path.isfile("tests/data/output/input_csv_processed.json")
+        with open("tests/data/output/input_csv_processed.json", 'r') as f:
+            jsn = json.load(f)
+            assert len(jsn) == 84
+            for entry in jsn:
+                assert entry['documentkey'] == '<#CG>'
+                assert 'record_checkpoint' not in entry
+    
     def test_mask_to_csv(self):
 
         if os.path.isfile("tests/data/output/input_processed.csv"):
@@ -96,6 +193,7 @@ class FilteringTestCase(TestCase):
             content = csv.DictReader(f)
             for entry in content:
                 assert entry['documentkey'] == '<#CG>'
+
 
     def test_real_time_test_mask(self):
         with open('tests/data/sys_audit.json', 'r') as f:
@@ -126,6 +224,7 @@ class FilteringTestCase(TestCase):
             jsn = json.load(f)
             for entry in jsn:
                 assert entry['documentkey'] == '<#CG>'
+
 
     def test_filtering_wiht_user_admin(self):
 

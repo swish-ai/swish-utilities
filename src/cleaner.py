@@ -14,6 +14,8 @@ from flashtext import KeywordProcessor
 split_compiled = re.compile(r"\n|\s")
 
 WORDS_REGEX = r'([^\s-]|[.]|[@-])+'
+MA_MARK = '<#MASKING_ERROR>'
+USER_CUSTOM = '<#USER_CUSTOM>'
 
 MASK: int = 2
 ANONYMIZE: int = 1
@@ -146,11 +148,12 @@ class TextCleaner:
 
     def __init__(self, custom_tokens_filename_list: None, 
                 important_token_file=None,
-                encodings=None):
+                encodings=None, patterns=None):
         """
         Cleaner Class
         compiling regexes and custom tokens file.
         """
+        self.user_patterns = self.create_user_patterns(patterns)
         self._custom_tokens_chunk = None
         self._flashtext_names = KeywordProcessor(case_sensitive=False)
 
@@ -182,6 +185,19 @@ class TextCleaner:
         self.important_tokens_list = set()
         self.set_important_tokens(important_token_file)
         self.set_custom_tokens(custom_tokens_filename_list, encodings=encodings)
+    
+    def create_user_patterns(self, patterns):
+        res = []
+        if not patterns:
+            return res
+        for pattern in patterns:
+            parts = pattern.rsplit(":", 1)
+            ptrn = re.compile(parts[0])
+            if len(parts) == 2:
+                res.append((ptrn, parts[1]))
+            else:
+                res.append((ptrn, USER_CUSTOM))
+        return res
 
     def set_important_tokens(self, important_token_file):
 
@@ -241,12 +257,16 @@ class TextCleaner:
                 return ' <#> '
             if self.__space.search(x):
                 return ' '
+            for pattern, replace in self.user_patterns:
+                if pattern.search(x):
+                    return replace
             return x
         except Exception as e:
             click.echo(click.style(f"There was an Error while masking {x} {e}", fg="red"))
             return '<MASK_PROBLEM>'
 
     def clean_custom_tokens_chunk(self, x, no_clean=False):
+        x = str(x)
         try:
             if no_clean:
                 return x
@@ -256,8 +276,8 @@ class TextCleaner:
 
             return x.strip()
         except Exception as e:
-            click.echo(click.style(f"Masking Error {e}", fg="red"))
-            return 'MASKING ERROR'
+            click.echo(click.style(f"Masking Error {e} for entry {x} returning {MA_MARK}", fg="red"))
+            return MA_MARK
 
     def transform(self, data: list) -> list:
         try:
@@ -414,13 +434,13 @@ class Masker:
                 conditions.append(part.split('='))
         no_clean = None
         if conditions:
-            all_column = output_data[column].values.tolist()
+            all_column = output_data[column].values
             # if condition provided, set default to not applying it (no_clean) until we found that condition is truly
             no_clean = [True] * len(all_column)
             for condition in conditions:
                 c_column, val = condition
                 val = str(val)
-                c_data = output_data[c_column].values.tolist()
+                c_data = output_data[c_column].values
                 for i, c in enumerate(c_data):
                     if str(c) == val:
                         no_clean[i] = False
@@ -429,9 +449,9 @@ class Masker:
             output_data[column] = cleaner.condition_clean(output_data, cond_method, column)
         else:
             if 'MASK' in methods and method == methods['MASK']:
-                output_data[column] = output_data[column].fillna('')
-                output_data[column] = cleaner.transform_with_condition(output_data[column].values.tolist(), no_clean)
+                # output_data[column] = output_data[column].fillna('')
+                output_data[column] = cleaner.transform_with_condition(output_data[column].values, no_clean)
             if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
-                output_data[column] = cleaner.anonymize(output_data[column].values.tolist(), no_clean)
+                output_data[column] = cleaner.anonymize(output_data[column].values, no_clean)
             if 'DROP' in methods and method == methods['DROP']:
                 output_data.drop(column, axis=1, inplace=True)

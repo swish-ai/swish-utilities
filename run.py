@@ -26,6 +26,9 @@ except:  # NOSONAR
 
 original_input = {}
 
+NOT_CSV_FILE_WARNING = """Provided input file is in csv format while output format is json.
+This will cause extra memory usage.
+Its strongly recommended to use --output_format csv for csv input."""
 # ENUMS
 MASK: int = 2
 ANONYMIZE: int = 1
@@ -88,6 +91,8 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--out_prop_name', '-o', help=Help.out_prop_name, default='documentkey',
             groups=['extracting', 'processing'])
 @dip_option('--input_dir', '-id', help=Help.input_dir, default=None, groups=['masking'])
+@dip_option('--input_file', '-if', help=Help.input_file, default='', groups=['masking'])
+@dip_option('--csv_chunk_size', '-cs', help=Help.csv_chunk_size, default=10000, groups=['masking'])
 @dip_option('--mapping_path', '-mp', help=Help.mapping_path, default=None, groups=['masking'])
 @dip_option('--custom_token_dir', '-ct', help=Help.custom_token_dir, default='', groups=['masking'])
 @dip_option('--important_token_file', '-it', help=Help.important_token_file, default=None, groups=['masking'])
@@ -95,6 +100,8 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking', 'extracting'])
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
             groups=['extracting', 'processing'])
+@dip_option('--pattern', '-pt', help=Help.input_encoding, default=[], 
+            groups=['masking', 'extracting'], multiple=True)
 @dip_option('--pretty_json', '-pj', is_flag=True, help=Help.pretty_json, groups=['extracting', 'masking'])
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
@@ -179,7 +186,8 @@ def create_masker(mapping_params):
     if mapping_params.important_token_file:
         assert os.path.isfile(mapping_params.important_token_file), 'important_token_file is not a valid file name'
         important_token_file = CustomUserFile(mapping_params.important_token_file, encodings=encodings)
-    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
+    cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file,
+                          encodings=encodings, patterns=mapping_params.pattern)
     custom_token_dir = mapping_params.custom_token_dir
     directory = mapping_params.custom_token_dir
     custom_tokens_filename_list = []
@@ -307,6 +315,9 @@ def masking_execute(params, app_settings):
     assert os.path.isdir(params.input_dir), 'input file is not a valid directory name'
     assert os.path.isfile(params.mapping_path), 'mapping file is not a valid file name'
     assert os.path.isdir(params.output_dir), 'output_dir is not a valid directory name'
+    if params.input_file:
+        input_file_path = os.path.join(params.input_dir, params.input_file)
+        assert os.path.isfile(input_file_path), 'input_file does not exist'
 
     # Assert and read important_token_file if exists
     important_token_file = None
@@ -323,7 +334,8 @@ def masking_execute(params, app_settings):
         for f in custom_tokens_filename_list:
             params.data.custom_tokens_filename_list.append(os.path.join(params.custom_token_dir, f))
     encodings = get_encodings_list(params.input_encoding)
-    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file, encodings=encodings)
+    params.data.cleaner = TextCleaner(params.data.custom_tokens_filename_list, important_token_file,
+                                      encodings=encodings, patterns=params.pattern)
 
     # Read mandatory files
     mapping_file = cli_file_read(params.mapping_path)
@@ -332,9 +344,15 @@ def masking_execute(params, app_settings):
 
     mask_results = create_masker(params)
     # Read input files and execute
-    input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
+    if params.input_file:
+        input_files = [params.input_file]
+    else:
+        input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     for f in input_files:
-        input_file = cli_file_read(os.path.join(params.input_dir, f), params.input_encoding)
+        input_file = cli_file_read(os.path.join(params.input_dir, f), params.input_encoding,
+                                                csv_chunk=params.csv_chunk_size)
+        if input_file.ext == 'csv' and params.output_format != 'csv':
+            click.echo(click.style(NOT_CSV_FILE_WARNING, fg="yellow"))
         params.data.file_objects.append(input_file)
         cli_file_process(input_file, mask_results, params, app_settings)
 
@@ -343,8 +361,15 @@ def cli_file_process(input_file, masker, params, app_settings):
 
     f0 = time()
     if input_file.data is not None:
-        output_data = masker(input_file.data, no_pd=True, no_output_json=True)
-        output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
+        data = input_file.data
+        if not input_file.chunked:
+            data = [data]
+        for chunk in data:
+            chunk = chunk.convert_dtypes(convert_boolean=False,
+                                         convert_string=False)
+
+            output_data = masker(chunk, no_pd=True, no_output_json=True)
+            output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)
         message = f'File processing COMPLETED into: {output_filename} with time:{time() - f0}'
         click.echo(message)
         app_settings.logger.info(message)
@@ -385,12 +410,12 @@ def get_encodings_list(encoding):
             encodings.append(enc)
     return encodings
 
-def cli_file_read(filename, encoding = None):
+def cli_file_read(filename, encoding=None, csv_chunk=None):
     view_name = os.path.split(filename)[-1]
     obj = {
         "selected": True,
         "filename": filename,
-        "ext": filename.split('.')[-1],
+        "ext": filename.split('.')[-1].lower(),
         "view_name": view_name,
         "is_cli": True
         }
@@ -411,7 +436,11 @@ def cli_file_read(filename, encoding = None):
             if file_object.ext == 'csv':
                 for enc in encodings:
                     try:
-                        file_object.data = read_csv(file_object.filename, encoding=enc)
+                        if csv_chunk is None:
+                            file_object.data = read_csv(file_object.filename, encoding=enc)
+                        else:
+                            file_object.data = read_csv(file_object.filename, encoding=enc, chunksize=csv_chunk)
+                            file_object.chunked = True
                         break
                     except Exception:
                         click.echo(click.style(f"Failed to read file {file_object.filename}" +
