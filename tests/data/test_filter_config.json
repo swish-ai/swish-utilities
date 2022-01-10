@@ -1,0 +1,30 @@
+{
+    "mask_mapping": [
+		{
+			"column": "fieldname","method": 4, "condition": "incident_state comments closed_at"
+		}
+    ],
+	"pattern": ["(?i)secret[\\S]*:<#UNKNOWN>", "(?i)company[\\S]*:<#SOMETHING>"],
+    "custom_token":[],
+    "custom_token_dir": "",
+    "important_tokens": [],
+    "important_token_file": null,
+	"batch_size": 10000,
+	"file_limit": 50000,
+	"id_list_path": null,
+	"id_field_name": "fieldname",
+	"stop_limit": 1000000000,
+	"interval": 2,
+    "compress": false,
+
+	"parallel": 1,
+	"extension": "json",
+	
+	"data_id_name": "",
+	"export_and_mask": false,
+	"output_dir": "",
+	"out_prop_name": "documentkey",
+	"input_dir": null,
+	"input_sources": "",
+	"out_props_csv_path": null
+}

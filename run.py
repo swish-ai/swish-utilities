@@ -98,6 +98,8 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--important_token_file', '-it', help=Help.important_token_file, default=None, groups=['masking'])
 @dip_option('--input_sources', '-is', help=Help.input_sources, default='', groups=['processing'])
 @dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking', 'extracting'])
+@dip_option('--white_list', '-wl', help=Help.input_encoding, default=[], 
+            groups=['masking', 'extracting'], multiple=True)
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
             groups=['extracting', 'processing'])
 @dip_option('--pattern', '-pt', help=Help.input_encoding, default=[], 
@@ -200,7 +202,7 @@ def create_masker(mapping_params):
         '(--mapping_path) mapping file is not a valid file name'
     mapping_file = cli_file_read(mapping_params.mapping_path)
 
-    return Masker(cleaner, mapping_file, custom_tokens_filename_list, 
+    return Masker(cleaner, mapping_params, mapping_file, custom_tokens_filename_list, 
                   anonymize_value=ANONYMIZE, mask_value=MASK, drop_value=DROP)
 
 
