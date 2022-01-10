@@ -148,4 +148,41 @@ class FilteringTestCase(TestCase):
             jsn = json.load(f)
             for entry in jsn:
                 assert entry['documentkey'] == '<#CG>'
+
+    def test_filter_and_mask(self):
+        if os.path.isfile("tests/data/output/input_processed.json"):
+            os.remove("tests/data/output/input_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input/",
+                "--config", "tests/data/test_filter_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_processed.json")
+
+        with open("tests/data/output/input_processed.json", 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                assert entry["fieldname"] in ["incident_state", "comments", "closed_at"]
+
+    def test_white_list_mask(self):
+        if os.path.isfile("tests/data/output/input_processed.json"):
+            os.remove("tests/data/output/input_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input/",
+                "--config", "tests/data/test_white_list_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_processed.json")
+
+        with open("tests/data/output/input_processed.json", 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                for key in entry:
+                    assert key in ["fieldname", "reason", "sys_id"]
     

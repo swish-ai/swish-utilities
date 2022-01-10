@@ -20,6 +20,7 @@ USER_CUSTOM = '<#USER_CUSTOM>'
 MASK: int = 2
 ANONYMIZE: int = 1
 DROP: int = 3
+FILTER_BY_WHITE_LIST = 4
 
 class UnsupportedFile(Exception):
     """Raised when CustomUserFile selected unsupported type"""
@@ -368,7 +369,7 @@ class MethodCondition:
 
 
 class Masker:
-    def __init__(self, cleaner, mapping_file, custom_tokens_filename_list, anonymize_value, 
+    def __init__(self, cleaner, params, mapping_file, custom_tokens_filename_list, anonymize_value, 
                  mask_value, drop_value):
         self.cleaner: TextCleaner = cleaner
         self.mapping_file = mapping_file
@@ -376,6 +377,7 @@ class Masker:
         self.methods = {'ANONYMIZE': anonymize_value,
                         'MASK': mask_value,
                         'DROP': drop_value}
+        self.params = params
 
     def __call__(self, items, no_pd=False, no_output_json=False):
         if not no_pd and not items:
@@ -388,6 +390,9 @@ class Masker:
         else:
             output_data = pd.json_normalize(items)
         methods = self.methods
+
+        output_data = self.__filter_rows(output_data, mapping_file)
+
         for column in output_data:
             self.__process_col(output_data, mapping_file, column, methods, cleaner)
 
@@ -395,6 +400,31 @@ class Masker:
             return output_data
 
         return output_data.to_dict(orient="records")
+
+    def __filter_rows(self, input_data, mapping_file):
+        if mapping_file.filename != '' and \
+                mapping_file.data is not None and \
+                'column' in mapping_file.data:
+            for column in input_data:
+                
+                if column in mapping_file.data['column'].to_list() and \
+                    mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
+
+                    data = mapping_file.data[mapping_file.data['column'] == column]
+                    
+                    method = data['method'].item()
+                    condition = data['condition'].item()
+                    if method == FILTER_BY_WHITE_LIST:
+                        values = condition.split(' ')
+                        cond = None
+                        for i, val in enumerate(values):
+                            if i == 0:
+                                cond = (input_data[column] == values[i])
+                            else:
+                                cond = cond | (input_data[column] == values[i])
+                        input_data = input_data[cond]
+
+        return input_data
 
     def __get_condition_method(self, m, col):
         if not m:
@@ -413,13 +443,15 @@ class Masker:
         condition = None
         if mapping_file.filename != '' and \
                 mapping_file.data is not None and \
+               'column' in mapping_file.data and \
                 column in mapping_file.data['column'].to_list() and \
                 mapping_file.data[mapping_file.data['column'] == column]['method'].item() is not None:
 
             data = mapping_file.data[mapping_file.data['column'] == column]
-            if 'condition' in data:
-                condition = data['condition'].item()
             method = mapping_file.data[mapping_file.data['column'] == column]['method'].item()
+            if method != FILTER_BY_WHITE_LIST and 'condition' in data:
+                condition = data['condition'].item()
+
         cond_method = None
         if method is not None:
             try:
@@ -444,6 +476,10 @@ class Masker:
                 for i, c in enumerate(c_data):
                     if str(c) == val:
                         no_clean[i] = False
+
+        if self.params.white_list and column not in self.params.white_list:
+            output_data.drop(column, axis=1, inplace=True)
+            return
 
         if cond_method:
             output_data[column] = cleaner.condition_clean(output_data, cond_method, column)
