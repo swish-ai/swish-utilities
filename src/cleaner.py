@@ -434,13 +434,13 @@ class Masker:
                 conditions.append(part.split('='))
         no_clean = None
         if conditions:
-            all_column = output_data[column].values.tolist()
+            all_column = output_data[column].values
             # if condition provided, set default to not applying it (no_clean) until we found that condition is truly
             no_clean = [True] * len(all_column)
             for condition in conditions:
                 c_column, val = condition
                 val = str(val)
-                c_data = output_data[c_column].values.tolist()
+                c_data = output_data[c_column].values
                 for i, c in enumerate(c_data):
                     if str(c) == val:
                         no_clean[i] = False
@@ -449,9 +449,9 @@ class Masker:
             output_data[column] = cleaner.condition_clean(output_data, cond_method, column)
         else:
             if 'MASK' in methods and method == methods['MASK']:
-                output_data[column] = output_data[column].fillna('')
-                output_data[column] = cleaner.transform_with_condition(output_data[column].values.tolist(), no_clean)
+                # output_data[column] = output_data[column].fillna('')
+                output_data[column] = cleaner.transform_with_condition(output_data[column].values, no_clean)
             if 'ANONYMIZE' in methods and method == methods['ANONYMIZE']:
-                output_data[column] = cleaner.anonymize(output_data[column].values.tolist(), no_clean)
+                output_data[column] = cleaner.anonymize(output_data[column].values, no_clean)
             if 'DROP' in methods and method == methods['DROP']:
                 output_data.drop(column, axis=1, inplace=True)

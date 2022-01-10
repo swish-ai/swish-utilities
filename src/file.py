@@ -1,6 +1,7 @@
 import os
 import gzip
 import json
+import click
 from pandas import read_csv, read_excel, DataFrame
 
 from cli_util import DipException
@@ -97,4 +98,5 @@ class File:
                 results.to_csv(params.output_filename, index=False)
             else:
                 results.to_csv(params.output_filename, mode='a', header=False, index=False)
+                print(f"Saved chunk {self.current_chunk + 1} to {params.output_filename}", end='\r')
             self.current_chunk += 1

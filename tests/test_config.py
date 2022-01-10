@@ -108,8 +108,8 @@ class FilteringTestCase(TestCase):
             assert entry['documentkey'] == 'Very <#UNKNOWN> info about <#SOMETHING>'
 
     def test_patterns_with_config_and_cli_input(self):
-        if os.path.isfile("tests/data/output/input_pattern_processed.json"):
-            os.remove("tests/data/output/input_pattern_processed.json")
+        if os.path.isfile("tests/data/output/input_pattern_processed.csv"):
+            os.remove("tests/data/output/input_pattern_processed.csv")
 
         args = ["--mask", "--output_dir", "tests/data/output", 
                 "--input_dir", "tests/data/input_pattern",
@@ -126,4 +126,26 @@ class FilteringTestCase(TestCase):
 
         for entry in jsn:
             assert entry['documentkey'] == 'Very <#UNKNOWN> qwerty about <#SOMETHING>'
+
+    def test_mask_single_file(self):
+        if os.path.isfile("tests/data/output/input_a_processed.json"):
+            os.remove("tests/data/output/input_a_processed.json")
+        if os.path.isfile("tests/data/output/input_b_processed.json"):
+            os.remove("tests/data/output/input_b_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input_single/",
+                "--input_file", "input_a.json",
+                "--config", "tests/data/test_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_a_processed.json")
+        assert not os.path.isfile("tests/data/output/input_b_processed.json")
+
+        with open("tests/data/output/input_a_processed.json", 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                assert entry['documentkey'] == '<#CG>'
     
