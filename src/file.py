@@ -86,7 +86,7 @@ class File:
                                                       indent=indent), encoding=encoding)
                     jsn = jsn + new_json
                 with open(params.output_filename, 'w', encoding=encoding) as file:
-                    json.dump(jsn, file)
+                    json.dump(jsn, file, ensure_ascii=False)
         self.current_chunk += 1
 
     def write_to_csv_file(self, results, params, encoding):

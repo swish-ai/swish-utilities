@@ -7,7 +7,7 @@ class Help:
     extract: str = 'Extract data from ServiceNow'
     proccess: str = 'Process extracted data'
     stop_limit: str = 'Maximum total records count that can be extracted'
-    file_limit: str = 'Maximum amount of files that will be created during extraction'
+    file_limit: str = 'Maximum amount of entires in the single file'
     interval: str = 'Hours for single extraction iteration'
     batch_size: str = 'Amount of records for single download'
     thread_id: str = ''
