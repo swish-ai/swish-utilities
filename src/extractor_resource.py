@@ -169,7 +169,14 @@ class Extractor:
             response_time = round(time() - t1, 3)
 
             self.offset += params.extracting.batch_size
-            resp_body = resp.json()
+            try:
+                resp_body = json.loads(resp.text)
+            except Exception as e:
+                message = f"Failed to load response body using UTF-8. Going to use defults. {e}"
+                self.settings.logger.error(message)
+                click.echo(click.style(message, fg="yellow"))
+                resp_body = resp.json()
+            
 
             self.__process_response(resp, resp_body, params, response_time)
 
@@ -316,10 +323,10 @@ Total Failed Approximated: {self.total_failed}), Response Time: {response_time} 
 
         if params.extracting.compress and not params.masking.enabled:
             with gzip.open(params.output_filename + '.json.gz', 'wt', encoding=encoding) as zipfile:
-                json.dump(results, zipfile, indent=indent)
+                json.dump(results, zipfile, indent=indent, ensure_ascii=False)
         else:
             with open(params.output_filename + '.json', 'w', encoding=encoding) as f:
-                json.dump(results, f, indent=indent)
+                json.dump(results, f, indent=indent, ensure_ascii=False)
 
             # ZipFile(f'{params.output_filename}.zip', mode='w').write(params.output_filename)
 

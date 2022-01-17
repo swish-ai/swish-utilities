@@ -66,7 +66,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--extract', '-z', is_flag=True, help=Help.extract, ns="extracting")
 @dip_option('--proccess', '-w', is_flag=True, help=Help.proccess, ns="processing")
 @dip_option('--stop_limit', '-l', help=Help.stop_limit, default=1000000000, groups=['extracting'])
-@dip_option('--file_limit', '-f', help=Help.file_limit, default=1000000, groups=['extracting'])
+@dip_option('--file_limit', '-f', help=Help.file_limit, default=40000000, groups=['extracting'])
 @dip_option('--interval', '-i', type=click.IntRange(1, sys.maxsize),
             help=Help.interval, default=24, groups=['extracting'])
 @dip_option('--batch_size', '-b', help=Help.batch_size, default=1000, groups=['extracting'])
