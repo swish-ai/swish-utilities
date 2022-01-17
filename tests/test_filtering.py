@@ -307,4 +307,36 @@ class FilteringTestCase(TestCase):
         assert len(data['documentkey'].values) == 9, "wrong output count"
 
         assert os.path.isfile(UNITEST_OUTPUT_FILE)
+    
+    def test_non_ascii(self):
+
+        with open('tests/data/non_ascii.json', 'r') as f:
+            mock_data = f.read()
+
+        assert not os.path.isfile(
+            UNITEST_OUTPUT_FILE), "The file should be deleted"
         
+        
+
+        mock_session = requests_mock.Mocker()
+        mock_session.register_uri(requests_mock.ANY,
+                                  'https://dev71074.service-now.com/api/now/table/sys_audit',
+                                  text=mock_data)
+        mock_session.start()
+
+        args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
+                "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--start_date", "2021-07-16", "--end_date", "2021-07-16"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+
+    
+
+        assert os.path.isfile(UNITEST_OUTPUT_FILE)
+        with open(UNITEST_OUTPUT_FILE, 'r') as f:
+            text = f.read()
+            assert 'לדוד משה היתה חווה' in text
+            assert 'Old MacDonald Had a Farm' in text
+
