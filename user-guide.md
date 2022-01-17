@@ -138,7 +138,7 @@ Options can be specified in the configuration file or per CLI execution by speci
 |--extract| -z|| Extract data from ServiceNow|
 |--proccess| -w|| Process extracted data|
 |--stop\_limit| -l|1000000000| Maximum total records count that can be extracted|
-|--file\_limit| -f|1000000| Maximum amount of files that will be created during extraction|
+|--file\_limit| -f|1000000| Maximum amount of entires in the single file|
 |--interval| -i|24| Hours for single extraction iteration|
 |--batch\_size| -b|1000| Amount of records for single download|
 |--parallel| -x|1| Specification of the number or extract rest API requests that will be invoked in parallel. The provided interval value is split based on this specification for achieving the concurrency.|
