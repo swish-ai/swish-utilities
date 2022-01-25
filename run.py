@@ -118,6 +118,7 @@ def cli(**kwargs):
         start = time()
         exec(params) # NOSONAR
         elapsed = (time() - start)
+        click.echo(click.style(f"Utilities version: {VERSION}", fg="cyan"))
         click.echo(click.style(f"Execution time: {timedelta(seconds=elapsed)}", fg="cyan"))
     except Exception as e:
         if kwargs['debug']:
