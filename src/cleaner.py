@@ -159,7 +159,8 @@ class TextCleaner:
         self._flashtext_names = KeywordProcessor(case_sensitive=False)
 
         self.__phone = re.compile(
-            r'\d{3}-{2}-{5,7}|'
+            r'\d{3}-\d{2}-\d{5,7}|'
+            r'\+*\d{1,10}\ +\d{1,10}\S*|'
             r'\+\d{2,4} \d{2,5} \d{2,7} \(?\d{2,4}\)?|'
             r'\+\d{2,4} \d{1,5} \d{2,7} \d{1,7} (\d{1,7})?|'
             r'\+\d{2,4} \d{1,5} \d{2,7}( \d{1,7})?( \d{1,7})?|'
@@ -271,6 +272,8 @@ class TextCleaner:
         try:
             if no_clean:
                 return x
+            #phone can contains several words, so it should be done separately
+            x = self.__phone.sub('<#P>', x)
             x = self.__words.sub(self.__replace_confident, x)
             if self.custom_tokens_list:
                 x = self._flashtext_names.replace_keywords(x).strip()
