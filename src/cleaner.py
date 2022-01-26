@@ -13,7 +13,7 @@ from flashtext import KeywordProcessor
 
 split_compiled = re.compile(r"\n|\s")
 
-WORDS_REGEX = r'([^\s-]|[.]|[@-])+'
+WORDS_REGEX = r'([^(\s:)])+'
 MA_MARK = '<#MASKING_ERROR>'
 USER_CUSTOM = '<#USER_CUSTOM>'
 
@@ -238,7 +238,8 @@ class TextCleaner:
 
     def __replace_confident(self, match):
         try:
-            x = match.group()
+            src = match.group()
+            x = src.strip()
             if self.__special.search(x):
                 return ''
             if self.__ssn.search(x):
@@ -262,7 +263,7 @@ class TextCleaner:
             for pattern, replace in self.user_patterns:
                 if pattern.search(x):
                     return replace
-            return x
+            return src
         except Exception as e:
             click.echo(click.style(f"There was an Error while masking {x} {e}", fg="red"))
             return '<MASK_PROBLEM>'
