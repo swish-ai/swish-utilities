@@ -34,8 +34,6 @@ MASK: int = 2
 ANONYMIZE: int = 1
 DROP: int = 3
 
-#excel loader extensions
-EXCELS = ['xls', 'xlsx', 'xlsb', 'xlsm', 'odf', 'ods',  'odt']
 
 mask_data = {'data': (SimpleNamespace(
     user_selected_file_list={},
@@ -81,7 +79,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--end_date', '-e', help=Help.end_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
             groups=['extracting'])
 @dip_option('--url', '-j', help=Help.url, default=None, groups=['extracting'])
-@dip_option('--output_format', '-of', help=Help.output_format, default='json',
+@dip_option('--output_format', '-of', help=Help.output_format, default='csv',
             choices=['json', 'csv'], groups=['extracting', 'masking'])
 @dip_option('--id_list_path', '-q', help=Help.id_list_path, default='', groups=['extracting'])
 @dip_option('--id_field_name', '-r', help=Help.id_field_name, default='sys_id', groups=['extracting'])
@@ -431,10 +429,10 @@ def cli_file_read(filename, encoding=None, csv_chunk=None):
         
 
         encodings = get_encodings_list(encoding)
-
+        supported_extensions = ['csv', 'json']
+        if file_object.ext.lower() not in supported_extensions:
+            raise DipException(f'Unsupported file extension {file_object.ext}. Only {supported_extensions} supported')
         try:
-            if file_object.ext in EXCELS:
-                file_object.data = read_excel(file_object.filename)
 
             if file_object.ext == 'csv':
                 for enc in encodings:

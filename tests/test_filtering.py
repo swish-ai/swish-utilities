@@ -40,7 +40,8 @@ class FilteringTestCase(TestCase):
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--id_list_path", "tests/data/user_types.csv",
-            "--id_field_name", "user", "--parallel", "2"]
+                "--output_format", "json",
+                "--id_field_name", "user", "--parallel", "2"]
         
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -58,7 +59,9 @@ class FilteringTestCase(TestCase):
         args = ["--mask", "--output_dir", "tests/data/output", 
                 "--input_dir", "tests/data/input",
                 "--mapping_path", "tests/data/mapping_file.csv", 
-                "--custom_token_dir", "tests/data/custom", 
+                "--custom_token_dir", "tests/data/custom",
+                "--output_format", "json",
+                "--pattern", "\\b(\\d+[a-zA-Z]|[a-zA-Z]+\\d)[\\w\\-\\_\\!\\?\\.\\#\\$\\%\\^\\&\\*\\.\\(\\)\\\\\\/]+\\b:<#CG>",
                 "--important_token_file", "tests/data/important_tokens.txt"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -107,6 +110,7 @@ class FilteringTestCase(TestCase):
                 "--mapping_path", "tests/data/mapping_file.csv", 
                 "--custom_token_dir", "tests/data/custom", 
                 "--important_token_file", "tests/data/important_tokens.txt",
+                "--output_format", "json",
                 "--white_list", "fieldname",
                 "--white_list", "reason",
                 "--white_list", "sys_id"
@@ -132,7 +136,8 @@ class FilteringTestCase(TestCase):
                 "--output_format", "csv",
                 "--input_dir", "tests/data/input_csv",
                 "--mapping_path", "tests/data/mapping_file.csv", 
-                "--custom_token_dir", "tests/data/custom", 
+                "--custom_token_dir", "tests/data/custom",
+                "--pattern", "\\b(\\d+[a-zA-Z]|[a-zA-Z]+\\d)[\\w\\-\\_\\!\\?\\.\\#\\$\\%\\^\\&\\*\\.\\(\\)\\\\\\/]+\\b:<#CG>", 
                 "--important_token_file", "tests/data/important_tokens.txt"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -156,7 +161,8 @@ class FilteringTestCase(TestCase):
                 "--output_format", "csv", "--csv_chunk_size", "2",
                 "--input_dir", "tests/data/input_csv",
                 "--mapping_path", "tests/data/mapping_file.csv", 
-                "--custom_token_dir", "tests/data/custom", 
+                "--custom_token_dir", "tests/data/custom",
+                "--pattern", "\\b(\\d+[a-zA-Z]|[a-zA-Z]+\\d)[\\w\\-\\_\\!\\?\\.\\#\\$\\%\\^\\&\\*\\.\\(\\)\\\\\\/]+\\b:<#CG>",
                 "--important_token_file", "tests/data/important_tokens.txt"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -180,7 +186,8 @@ class FilteringTestCase(TestCase):
                 "--output_format", "json", "--csv_chunk_size", "2",
                 "--input_dir", "tests/data/input_csv",
                 "--mapping_path", "tests/data/mapping_file.csv", 
-                "--custom_token_dir", "tests/data/custom", 
+                "--custom_token_dir", "tests/data/custom",
+                "--pattern", "\\b(\\d+[a-zA-Z]|[a-zA-Z]+\\d)[\\w\\-\\_\\!\\?\\.\\#\\$\\%\\^\\&\\*\\.\\(\\)\\\\\\/]+\\b:<#CG>",
                 "--important_token_file", "tests/data/important_tokens.txt"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -205,6 +212,7 @@ class FilteringTestCase(TestCase):
                 "--mapping_path", "tests/data/mapping_file.csv", 
                 "--custom_token_dir", "tests/data/custom", 
                 "--important_token_file", "tests/data/important_tokens.txt",
+                "--pattern", "\\b(\\d+[a-zA-Z]|[a-zA-Z]+\\d)[\\w\\-\\_\\!\\?\\.\\#\\$\\%\\^\\&\\*\\.\\(\\)\\\\\\/]+\\b:<#CG>",
                 "--output_format", "csv"
                 ]
         runner = CliRunner()
@@ -238,6 +246,8 @@ class FilteringTestCase(TestCase):
         args = ["--extract", "--export_and_mask", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--mapping_path", "tests/data/mapping_file.csv",
+                "--output_format", "json",
+                "--pattern", "\\b(\\d+[a-zA-Z]|[a-zA-Z]+\\d)[\\w\\-\\_\\!\\?\\.\\#\\$\\%\\^\\&\\*\\.\\(\\)\\\\\\/]+\\b:<#CG>",
                 "--custom_token_dir", "tests/data/custom"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -270,6 +280,7 @@ class FilteringTestCase(TestCase):
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--id_list_path", "tests/data/user_types.csv",
+                "--output_format", "json",
                 "--id_field_name", "user"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -297,6 +308,7 @@ class FilteringTestCase(TestCase):
 
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--output_format", "json",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16", "--out_props_csv_path", "dock_ids.csv"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -326,6 +338,7 @@ class FilteringTestCase(TestCase):
 
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--output_format", "json",
                 "--start_date", "2021-07-16", "--end_date", "2021-07-16"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)

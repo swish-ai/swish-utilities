@@ -35,6 +35,7 @@ class SelectiveExtractionTesting(TestCase):
 
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--output_format", "json",
                 "--start_date", "2021-10-03", "--end_date", "2021-10-04"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -92,6 +93,7 @@ class SelectiveExtractionTesting(TestCase):
 
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
+                "--output_format", "json",
                 "--start_date", "2021-10-03", "--end_date", "2021-10-04", "--id_list_path", TEST_IDS_FILE]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -145,6 +147,7 @@ class SelectiveExtractionTesting(TestCase):
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-10-03", "--end_date", "2021-10-04", "--id_list_path", TEST_IDS_FILE2,
+                "--output_format", "json",
                 "--id_field_name", "custom_sys_id"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
@@ -176,6 +179,7 @@ class SelectiveExtractionTesting(TestCase):
         args = ["--extract", "--url", "https://dev71074.service-now.com/api/now/table/sys_audit?sysparm_query=tablename=incident",
                 "--username", "fake_user", "--password", "fake_pass",  "--batch_size", "10000", "--file_limit", "50000",
                 "--start_date", "2021-10-03", "--end_date", "2021-10-04", "--id_list_path", TEST_IDS_FILE2,
+                "--output_format", "json",
                 "--id_field_name", "custom_sys_id", "--data_id_name", "custom_sys_id"]
         runner = CliRunner()
         result = runner.invoke(cli, args, catch_exceptions=False)
