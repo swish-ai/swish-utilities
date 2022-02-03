@@ -170,7 +170,7 @@ class TextCleaner:
             r'\d{2,4}[-\s]\d{2,4}[-\s]\d{2,4}([-\s]\d{2,4})?')
 
         self.__url = re.compile(r"(http[s]?://(www\.)?|www\.)\S+", re.IGNORECASE)
-        self.__catalog = re.compile(r'\b(\d+[a-zA-Z]|[a-zA-Z]+\d)[\w\-\_\!\?\.\#\$\%\^\&\*\.\(\)\\\/]+\b')
+        # self.__catalog = re.compile(r'\b(\d+[a-zA-Z]|[a-zA-Z]+\d)[\w\-\_\!\?\.\#\$\%\^\&\*\.\(\)\\\/]+\b')
 
         self.__cc = re.compile(r'\d{3,4}-\d{3,4}-\d{3,4}-\d{3,4}')
         self.__ip = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
@@ -254,8 +254,8 @@ class TextCleaner:
                 return ' <#M> '
             if self.__phone.search(x):
                 return ' <#P> '
-            if self.__catalog.search(x):
-                return ' <#CG> '
+            # if self.__catalog.search(x):
+            #     return ' <#CG> '
             if self.__numbers.search(x):
                 return ' <#> '
             if self.__space.search(x):
@@ -349,7 +349,7 @@ class TextCleaner:
         x = self.__phone.sub(' <#P> ', x)
         x = self.__email.sub(' <#M> ', x)
         x = self.__url.sub(' <#U> ', x)
-        x = self.__catalog.sub(' <#CG> ', x)
+        # x = self.__catalog.sub(' <#CG> ', x)
         x = self.__ip.sub(' <#I> ', x)
         x = self.__numbers.sub(lambda m: ' <#> ', x)
         x = self.__space.sub(' ', x)
