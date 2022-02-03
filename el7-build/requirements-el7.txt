@@ -9,4 +9,3 @@ numpy==1.19.5
 pandas==1.1.5
 flashtext==2.7
 click==8.0.3
-openpyxl==3.0.9
