@@ -262,7 +262,7 @@ class TextCleaner:
                 return ' '
             for pattern, replace in self.user_patterns:
                 if pattern.search(x):
-                    return replace
+                    return pattern.sub(replace, x)
             return src
         except Exception as e:
             click.echo(click.style(f"There was an Error while masking {x} {e}", fg="red"))
@@ -376,12 +376,27 @@ class Masker:
     def __init__(self, cleaner, params, mapping_file, custom_tokens_filename_list, anonymize_value, 
                  mask_value, drop_value):
         self.cleaner: TextCleaner = cleaner
-        self.mapping_file = mapping_file
+        self.mapping_file = self.__update_auto(mapping_file)
         self.custom_tokens_filename_list = custom_tokens_filename_list
         self.methods = {'ANONYMIZE': anonymize_value,
                         'MASK': mask_value,
                         'DROP': drop_value}
         self.params = params
+    
+    def __update_auto(self, mapping_file):
+        df = mapping_file.data
+        auto_indices = []
+        res = []
+        for index, row in df.iterrows():
+            if str(row["method"]).lower() == 'auto':
+                auto_indices.append(index)
+            else:
+                res.append(f'fieldname={row["column"]};{row["method"]}')
+
+        auto_method = '|'.join(res)
+        for index in auto_indices:
+            df.at[index,'method'] = auto_method
+        return mapping_file
 
     def __call__(self, items, no_pd=False, no_output_json=False):
         if not no_pd and not items:

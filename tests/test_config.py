@@ -167,6 +167,24 @@ class FilteringTestCase(TestCase):
             jsn = json.load(f)
             for entry in jsn:
                 assert entry["fieldname"] in ["incident_state", "comments", "closed_at"]
+    
+    def test_nested_filter_and_mask(self):
+        if os.path.isfile("tests/data/output/inner/input_csv_processed.csv"):
+            os.remove("tests/data/output/inner/input_csv_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input_nested/",
+                "--config", "tests/data/test_filter_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/inner/input_csv_processed.csv")
+
+        df = read_csv("tests/data/output/inner/input_csv_processed.csv", encoding="UTF-8")
+        jsn = json.loads(df.to_json(orient='records'))
+        for entry in jsn:
+            assert entry["fieldname"] in ["incident_state", "comments", "closed_at"]
 
     def test_white_list_mask(self):
         if os.path.isfile("tests/data/output/input_processed.json"):
@@ -179,11 +197,11 @@ class FilteringTestCase(TestCase):
         result = runner.invoke(cli, args, catch_exceptions=False)
         print(result.output)
         assert result.exit_code == 0
-        # assert os.path.isfile("tests/data/output/input_processed.json")
+        assert os.path.isfile("tests/data/output/input_processed.json")
 
-        # with open("tests/data/output/input_processed.json", 'r') as f:
-        #     jsn = json.load(f)
-        #     for entry in jsn:
-        #         for key in entry:
-        #             assert key in ["fieldname", "reason", "sys_id"]
+        with open("tests/data/output/input_processed.json", 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                for key in entry:
+                    assert key in ["fieldname", "reason", "sys_id"]
     

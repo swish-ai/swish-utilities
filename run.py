@@ -345,18 +345,38 @@ def masking_execute(params, app_settings):
 
     mask_results = create_masker(params)
     # Read input files and execute
-    if params.input_file:
-        input_files = [params.input_file]
-    else:
-        input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
+    # if params.input_file:
+    #     input_files = [params.input_file]
+    # else:
+    #     input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
+    input_files = []
+    get_all_files(params, input_files)
     for f in input_files:
-        input_file = cli_file_read(os.path.join(params.input_dir, f), params.input_encoding,
+        input_file = cli_file_read(f, params.input_encoding,
                                                 csv_chunk=params.csv_chunk_size)
         if input_file.ext == 'csv' and params.output_format != 'csv':
             click.echo(click.style(NOT_CSV_FILE_WARNING, fg="yellow"))
         params.data.file_objects.append(input_file)
         cli_file_process(input_file, mask_results, params, app_settings)
 
+
+def get_all_files(params, out_res, cur_dir=None):
+    if params.input_file:
+        out_res.append(os.path.join(params.input_dir, params.input_file))
+        return
+
+    if cur_dir is None:
+        cur_dir = ''
+    files = os.listdir(os.path.join(params.input_dir, cur_dir))
+    for f in files:
+        p = os.path.join(params.input_dir, cur_dir, f)
+        if os.path.isfile(p):
+            if f.lower().endswith('.json') or f.lower().endswith('.csv'):
+                out_res.append(os.path.join(params.input_dir, cur_dir, f))
+            else:
+                click.echo(f'unsupported file {f}')
+        if os.path.isdir(p):
+            get_all_files(params, out_res, os.path.join(cur_dir, f))
 
 def cli_file_process(input_file, masker, params, app_settings):
 
