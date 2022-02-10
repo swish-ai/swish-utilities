@@ -96,13 +96,14 @@ You can provide masking options for columns via mask_mapping entry in the config
 **column** - column/property name that should be masked
 
 **method** - mapping/masking method
-There are 3 mapping methods for column<br>
+There are 5 mapping methods for column<br>
 1 - Anonymization. Field value will be anonymized completely.<br>
 2 - Masking. Only sensitive information inside the field will be replaced with constant value<br>
 3 - Drop. All column with this name will be deleted.<br>
-4 - Filter rows that column value not in provided condition. Condition should contain space separated values.
+4 - Filter rows that column value not in provided condition. Condition should contain space separated values.<br>
+auto - Used mainly for sys_audit newvalue/oldvalue. If specified, the masking will be performed according to fieldname value and corresponding fields masking methods
 
-Exapmle config entie:
+Exapmle config entity:
 ```
 ...
 {
