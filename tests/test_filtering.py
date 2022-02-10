@@ -205,7 +205,7 @@ class FilteringTestCase(TestCase):
     def test_mask_to_csv(self):
 
         if os.path.isfile("tests/data/output/input_processed.csv"):
-            os.remove("tests/data/output/input_processed.json")
+            os.remove("tests/data/output/input_processed.csv")
 
         args = ["--mask", "--output_dir", "tests/data/output", 
                 "--input_dir", "tests/data/input",

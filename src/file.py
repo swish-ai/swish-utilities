@@ -2,6 +2,7 @@ import os
 import gzip
 import json
 import click
+import pathlib
 from pandas import read_csv, read_excel, DataFrame
 
 from cli_util import DipException
@@ -16,6 +17,7 @@ class File:
         self.cleaner = None
         self.chunked = False
         self.current_chunk = 0
+        self.dir_name = os.path.dirname(filename)
 
         # Extras
         try:
@@ -34,15 +36,22 @@ class File:
 
     def save_data_to_file(self, output_data, destination_folder, params):
         output_filename = None
+        sub_dir = ''
+        try:
+            sub_dir = self.dir_name[len(params.input_dir):]
+            pathlib.Path(os.path.join(destination_folder, sub_dir)).mkdir(parents=True, exist_ok=True)
+        except:
+            pass
+
         try:
             if params.output_format == 'json':
-                output_filename = os.path.join(destination_folder,
+                output_filename = os.path.join(destination_folder, sub_dir,
                                            self.non_extension_part + '_processed.json')
                 params.output_filename = output_filename
                 self.save_json_file(output_data, params)
             
             if params.output_format == 'csv':
-                output_filename = os.path.join(destination_folder,
+                output_filename = os.path.join(destination_folder, sub_dir,
                                            self.non_extension_part + '_processed.csv')
                 params.output_filename = output_filename
                 self.save_csv_file(output_data, params)
