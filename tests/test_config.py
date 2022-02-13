@@ -106,7 +106,7 @@ class FilteringTestCase(TestCase):
         for entry in jsn:
             assert entry['documentkey'] == 'Very <#UNKNOWN> info about <#SOMETHING>'
 
-    def test_boolean_with_config(self):
+    def test_types_with_config(self):
         if os.path.isfile("tests/data/output/input_boolean_processed.csv"):
             os.remove("tests/data/output/input_boolean_processed.csv")
 
@@ -124,6 +124,8 @@ class FilteringTestCase(TestCase):
 
         for entry in jsn:
             assert entry['test'] is True or entry['test'] is False
+            assert entry['test2'] == 11.3
+            assert str(entry['test3']) == '0' or str(entry['test3']) == '11'
 
     def test_patterns_with_config_and_cli_input(self):
         if os.path.isfile("tests/data/output/input_pattern_processed.csv"):
