@@ -127,6 +127,36 @@ class FilteringTestCase(TestCase):
             assert entry['test2'] == 11.3
             assert str(entry['test3']) == '0' or str(entry['test3']) == '11'
 
+    def test_default_config(self):
+        if os.path.isfile("tests/data/output/input_default_processed.csv"):
+            os.remove("tests/data/output/input_default_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input_default",
+                "--config", "default_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_default_processed.csv")
+        df = read_csv("tests/data/output/input_default_processed.csv", encoding="UTF-8")
+        jsn = json.loads(df.to_json(orient='records'))
+
+        for entry in jsn:
+            assert entry['short_description'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+            assert entry['description'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+            assert entry['comments_and_work_notes'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+            assert entry['work_notes'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+            assert entry['close_notes'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+            assert entry['comments'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+            if entry['fieldname'] == 'test':
+                assert entry['oldvalue'] == 'test test@gmail.com 123456 +12 +123456789 192.168.11.2 www.google.com 778-62-8144'
+                assert entry['newvalue'] == 'test test@gmail.com 123456 +12 +123456789 192.168.11.2 www.google.com 778-62-8144'
+            else:
+                assert entry['oldvalue'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+                assert entry['newvalue'] == 'test  <#M>   <#>  +12 <#P>  <#U>  <#P>'
+
+
     def test_patterns_with_config_and_cli_input(self):
         if os.path.isfile("tests/data/output/input_pattern_processed.csv"):
             os.remove("tests/data/output/input_pattern_processed.csv")
