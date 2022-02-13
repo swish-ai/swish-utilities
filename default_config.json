@@ -1,0 +1,32 @@
+{
+
+    "mask_mapping": [
+        {
+            "column": "short_description","method": 2, "condition": ""
+        },
+        {
+            "column": "description","method": 2, "condition": ""
+        },
+        {
+            "column": "comments_and_work_notes","method": 2, "condition": ""
+        },
+        {
+            "column": "work_notes","method": 2, "condition": ""
+        },
+        {
+            "column": "close_notes","method": 2, "condition": ""
+        },
+        {
+            "column": "comments","method": 2, "condition": ""
+        },		
+		{
+            "column": "newvalue","method": "auto", "condition": ""
+        },
+		{
+            "column": "oldvalue","method": "auto", "condition": ""
+        }
+		
+    ],
+    "pattern": ["\\d{3,10}:<#>"],
+	"compress": false
+}
