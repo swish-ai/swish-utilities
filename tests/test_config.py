@@ -88,8 +88,8 @@ class FilteringTestCase(TestCase):
                         assert jsn[i]['tablename'] == sha256(entry['tablename'].encode('utf-8')).hexdigest()
 
     def test_patterns_with_config(self):
-        if os.path.isfile("tests/data/output/input_pattern_processed.json"):
-            os.remove("tests/data/output/input_pattern_processed.json")
+        if os.path.isfile("tests/data/output/input_pattern_processed.csv"):
+            os.remove("tests/data/output/input_pattern_processed.csv")
 
         args = ["--mask", "--output_dir", "tests/data/output", 
                 "--input_dir", "tests/data/input_pattern",
@@ -105,6 +105,25 @@ class FilteringTestCase(TestCase):
 
         for entry in jsn:
             assert entry['documentkey'] == 'Very <#UNKNOWN> info about <#SOMETHING>'
+
+    def test_boolean_with_config(self):
+        if os.path.isfile("tests/data/output/input_boolean_processed.csv"):
+            os.remove("tests/data/output/input_boolean_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input_boolean",
+                "--output_format", "csv",
+                "--config", "tests/data/test_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_boolean_processed.csv")
+        df = read_csv("tests/data/output/input_boolean_processed.csv", encoding="UTF-8")
+        jsn = json.loads(df.to_json(orient='records'))
+
+        for entry in jsn:
+            assert entry['test'] is True or entry['test'] is False
 
     def test_patterns_with_config_and_cli_input(self):
         if os.path.isfile("tests/data/output/input_pattern_processed.csv"):

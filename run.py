@@ -386,7 +386,7 @@ def cli_file_process(input_file, masker, params, app_settings):
         if not input_file.chunked:
             data = [data]
         for chunk in data:
-            chunk = chunk.convert_dtypes(convert_boolean=False,
+            chunk = chunk.convert_dtypes(convert_boolean=True,
                                          convert_string=False)
 
             output_data = masker(chunk, no_pd=True, no_output_json=True)
