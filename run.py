@@ -15,6 +15,7 @@ from src.extractor_resource import CsvFromJson, DefaultDataProccessor, Extractor
 from types import SimpleNamespace
 from src.settings import Settings
 from src.file import File
+import pandas as pd
 from pandas import read_csv, read_excel, DataFrame
 from src.cleaner import Masker, TextCleaner, CustomUserFile
 from time import time
@@ -23,6 +24,7 @@ try:
     from version import VERSION
 except:  # NOSONAR
     VERSION = 'dev'
+
 
 original_input = {}
 
@@ -386,8 +388,10 @@ def cli_file_process(input_file, masker, params, app_settings):
         if not input_file.chunked:
             data = [data]
         for chunk in data:
-            chunk = chunk.convert_dtypes(convert_boolean=False,
-                                         convert_string=False)
+            # chunk = chunk.convert_dtypes(convert_boolean=True,
+            #                              convert_string=False)
+            # chunk = chunk.fillna(0)
+            chunk.fillna(chunk.dtypes.replace({'float64': 0.0, 'O': 'NULL'}), downcast='infer', inplace=True)
 
             output_data = masker(chunk, no_pd=True, no_output_json=True)
             output_filename = input_file.save_data_to_file(output_data, params.data.destination_folder, params)

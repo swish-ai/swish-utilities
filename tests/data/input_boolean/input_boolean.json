@@ -1,0 +1,11 @@
+[
+{
+    "test": true,
+    "test2": 11.3
+},
+{
+    "test": false,
+    "test2": 11.3,
+    "test3": 11
+}
+]
