@@ -61,7 +61,7 @@ runs:
         echo "::set-output name=artifact-file::${ARTIFACT_FILE}"
         if [[ "${{ inputs.os }}" == "windows" ]]; then
           echo "Archiving by powershell"
-          powershell Compress-Archive -Path dist/${{ inputs.distname }} default_config.json -DestinationPath ${ARTIFACT_FILE}
+          powershell Compress-Archive -LiteralPath dist/${{ inputs.distname }}, default_config.json -DestinationPath ${ARTIFACT_FILE}
         else
           echo "Archiving by zip"
           zip -v ${ARTIFACT_FILE} -j dist/${{ inputs.distname }} default_config.json
