@@ -27,6 +27,27 @@ jobs:
           -Dsonar.sources=/github/workflow -Dsonar.projectKey=swish-utilities-gh \
           -Dsonar.qualitygate.wait=true -Dsonar.qualitygate.timeout=300
 
+    - name: Run Whitesource
+      shell: bash
+      env:
+        WS_WSS_URL: https://essentials-saas.whitesourcesoftware.com/agent
+        WS_APIKEY: ${{ secrets.WS_APIKEY }}
+        WS_USERKEY: ${{ secrets.WS_USERKEY }}
+        WS_PRODUCTNAME: WS-CLI
+        WS_PROJECTNAME: swish-utilities
+        WS_LOG_FILES_LEVEL: debug
+        WS_OFFLINE: false
+      run: |
+        echo "
+        -------------------------
+          Downloading WhiteSource Unified Agent
+        -------------------------"
+        curl -s https://unified-agent.s3.amazonaws.com/wss-unified-agent.jar --output /tmp/wss-unified-agent.jar
+        echo "current directory = $(pwd)"
+        ls
+        java -jar /tmp/wss-unified-agent.jar -d ./  -offline false
+
+
     # https://github.com/marketplace/actions/slack-notify
     - name: Slack Notification
       if: ${{ failure() }}
