@@ -37,7 +37,7 @@ jobs:
         WS_PROJECTNAME: swish-utilities
         WS_LOG_FILES_LEVEL: debug
         WS_OFFLINE: false
-      run:
+      run: |
         echo "
         -------------------------
           Downloading WhiteSource Unified Agent
