@@ -112,6 +112,10 @@ def manual_override(val, current_groups, kwargs):
 @click.option('--debug', '-dg', help=Help.debug, is_flag=True)
 def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
+    run_with_args(**kwargs)
+
+
+def run_with_args(**kwargs):
     try:
         original_input['input_encoding'] = kwargs['input_encoding']
         params = setup_cli(original_input['args'], manual_override, **kwargs)

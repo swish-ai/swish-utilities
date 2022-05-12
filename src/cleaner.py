@@ -442,7 +442,7 @@ class Masker:
                             else:
                                 cond = cond | (input_data[column] == values[i])
                         input_data = input_data[cond]
-
+                input_data[column] = input_data[column].apply(lambda x: int(x) if type(x) == float and int(x) == x else x)
         return input_data
 
     def __get_condition_method(self, m, col):
