@@ -89,10 +89,12 @@ class File:
                     results.to_json(file, force_ascii=False, orient='records', indent=indent)
             else:
                 with open(params.output_filename, 'r') as file:
-                    jsn = json.load(file) 
-                    new_json = json.loads(results.to_json(force_ascii=False,
+                    jsn = json.load(file)
+                    txt = results.to_json(force_ascii=False,
                                                       orient='records',
-                                                      indent=indent), encoding=encoding)
+                                                      indent=indent)
+                    txt = txt.encode(encoding)
+                    new_json = json.loads(txt)
                     jsn = jsn + new_json
                 with open(params.output_filename, 'w', encoding=encoding) as file:
                     json.dump(jsn, file, ensure_ascii=False)
