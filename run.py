@@ -412,7 +412,10 @@ def load_json_to_file_obj(file_object, encodings):
         try:
             f = open(file_object.filename, "r", encoding=enc)
             # Reading from file
-            data = json.loads(f.read(), encoding=encoding)
+            txt = f.read()
+            if encoding:
+                txt = txt.encode(encoding)
+            data = json.loads(txt)
             encoding = enc
             break
         except Exception as e:
