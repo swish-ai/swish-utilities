@@ -159,7 +159,7 @@ class TextCleaner:
         self._flashtext_names = KeywordProcessor(case_sensitive=False)
 
         self.__phone = re.compile(
-            r'\+[0-9-.\()]{1,20}\ *[0-9-.\()\ ]{1,20}'
+            r'\+[0-9]{5,}|\+[0-9\.\ (\)-]{6,25}|\+[0-9(\)-]{1,6}[\ \.][0-9(\)\ \.-]{4,}|'
             r'\d{3}-\d{2}-\d{5,7}|'
             r'\+*\d{1,10}\ +\d{1,10}\S*|'
             r'\+\d{2,4} \d{2,5} \d{2,7} \(?\d{2,4}\)?|'
