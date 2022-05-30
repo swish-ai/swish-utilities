@@ -3,10 +3,21 @@ from types import SimpleNamespace
 import click
 import sys
 import os
+import inspect
+#### imports that should be here for py installer ot replaced with --hidden-import
+import requests
+import logging
+import logging.handlers
+from flashtext import KeywordProcessor
+###### end of work around
+
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir)
+
 import json
 import threading
 import traceback
-
 from datetime import datetime, timedelta
 from cli_util import DipException, dip_option, setup_cli
 from dip_help import Help
