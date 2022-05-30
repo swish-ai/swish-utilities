@@ -159,6 +159,7 @@ class TextCleaner:
         self._flashtext_names = KeywordProcessor(case_sensitive=False)
 
         self.__phone = re.compile(
+            r'\+[0-9-.\()]{1,20}\ *[0-9-.\()\ ]{1,20}'
             r'\d{3}-\d{2}-\d{5,7}|'
             r'\+*\d{1,10}\ +\d{1,10}\S*|'
             r'\+\d{2,4} \d{2,5} \d{2,7} \(?\d{2,4}\)?|'
@@ -307,7 +308,7 @@ class TextCleaner:
             method = None
             for xx in cond_methos:
                 cond_metho:MethodCondition = xx
-                if row[cond_metho.col_name] == cond_metho.val:
+                if row.get(cond_metho.col_name) == cond_metho.val:
                     method = cond_metho.method
                     break
             data.append((row[column], method))
@@ -391,7 +392,7 @@ class Masker:
             if str(row["method"]).lower() == 'auto':
                 auto_indices.append(index)
             else:
-                res.append(f'fieldname={row["column"]};{row["method"]}')
+                res.append(f'fieldname={row["column"]};{row["method"]}|Field Name={row["column"]};{row["method"]}')
 
         auto_method = '|'.join(res)
         for index in auto_indices:

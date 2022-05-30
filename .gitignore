@@ -18,6 +18,7 @@ dist/
 
 # Python virtual env
 venv/
+venv2/
 
 # Log files
 *.log
