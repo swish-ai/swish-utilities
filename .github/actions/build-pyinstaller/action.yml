@@ -36,7 +36,7 @@ runs:
         pip3 install -r requirements.txt
         pip3 install pyinstaller
         pyinstaller --clean --onefile \
-          --exclude-module matplotlib --exclude-module tkinter --exclude-module qt5 --exclude-module python-dateutil --exclude-module pyinstaller --exclude-module tests \
+          --exclude-module matplotlib --exclude-module tkinter --exclude-module qt5 --exclude-module python-dateutil --exclude-module pyinstaller --exclude-module tests --paths . \
           --hidden-import cli_util --hidden-import requests --hidden-import logging --hidden-import logging --hidden-import logging.handlers  --hidden-import flashtext \
           ${{ inputs.sourcename }} -n ${{ inputs.distname }}
         ls -l dist/
