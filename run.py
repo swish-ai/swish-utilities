@@ -396,7 +396,7 @@ def get_all_files(params, out_res, cur_dir=None):
             get_all_files(params, out_res, os.path.join(cur_dir, f))
 
 def cli_file_process(input_file, masker, params, app_settings):
-
+    click.echo(f'Starting file processing {input_file.filename}')
     f0 = time()
     if input_file.data is not None:
         data = input_file.data
