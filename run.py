@@ -116,6 +116,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--pattern', '-pt', help=Help.input_encoding, default=[], 
             groups=['masking', 'extracting'], multiple=True)
 @dip_option('--pretty_json', '-pj', is_flag=True, help=Help.pretty_json, groups=['extracting', 'masking'])
+@dip_option('--preprocess_patterns', '-pp', is_flag=True, help=Help.preprocess_patterns, groups=['masking'])
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
@@ -205,7 +206,8 @@ def create_masker(mapping_params):
         assert os.path.isfile(mapping_params.important_token_file), 'important_token_file is not a valid file name'
         important_token_file = CustomUserFile(mapping_params.important_token_file, encodings=encodings)
     cleaner = TextCleaner(mapping_params.data.custom_tokens_filename_list, important_token_file,
-                          encodings=encodings, patterns=mapping_params.pattern)
+                          encodings=encodings, patterns=mapping_params.pattern,
+                          preprocess_patterns=mapping_params.preprocess_patterns)
     custom_token_dir = mapping_params.custom_token_dir
     directory = mapping_params.custom_token_dir
     custom_tokens_filename_list = []

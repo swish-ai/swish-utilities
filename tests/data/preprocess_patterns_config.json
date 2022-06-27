@@ -1,0 +1,9 @@
+{
+
+    "mask_mapping": [
+        {
+            "column": "short_description", "method": 2, "condition": ""
+        }
+    ],
+    "pattern": []
+}
