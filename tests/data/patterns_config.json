@@ -1,0 +1,14 @@
+{
+
+    "mask_mapping": [
+        {
+            "column": "col1", "method": 2, "condition": ""
+        },
+        {
+            "column": "col2", "method": 2, "condition": ""
+        }
+        
+		
+    ],
+    "pattern": ["^\\/\\S+|\\s\\/\\S+|\\w[^A-Za-z]\\\\\\S+|^\\\\\\S+:<#path>", "[A-Za-z]+\\d{2,3}(\\W|$):<server_name>"]
+}

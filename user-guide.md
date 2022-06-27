@@ -164,6 +164,7 @@ Options can be specified in the configuration file or per CLI execution by speci
 |--output\_format| -of|json| Format of the created files|
 |input_encoding| -ie|UTF-8|Encoding of the input data files|
 |--pattern| -pt||Custom pattern for replacements in masking(2) mapping method. Can be used multiple times. Regex format should be compliant with python re library|
+|--preprocess_patterns| -pp||Preprocess patterns before any other text processing|
 |--config|-cg|| Configuration file for execution with less parameters|
 |--auth_file| -af|| Path to file containing authentication data in json format|
 
