@@ -149,7 +149,8 @@ class TextCleaner:
 
     def __init__(self, custom_tokens_filename_list: None, 
                 important_token_file=None,
-                encodings=None, patterns=None):
+                encodings=None, patterns=None,
+                preprocess_patterns=False):
         """
         Cleaner Class
         compiling regexes and custom tokens file.
@@ -157,6 +158,7 @@ class TextCleaner:
         self.user_patterns = self.create_user_patterns(patterns)
         self._custom_tokens_chunk = None
         self._flashtext_names = KeywordProcessor(case_sensitive=False)
+        self.preprocess_patterns=preprocess_patterns
 
         self.__phone = re.compile(
             r'\+[0-9]{5,}|\+[0-9\.\ (\)-]{6,25}|\+[0-9(\)-]{1,6}[\ \.][0-9(\)\ \.-]{4,}|'
@@ -261,9 +263,10 @@ class TextCleaner:
                 return ' <#> '
             if self.__space.search(x):
                 return ' '
-            for pattern, replace in self.user_patterns:
-                if pattern.search(x):
-                    return pattern.sub(replace, x)
+            if not self.preprocess_patterns:
+                for pattern, replace in self.user_patterns:
+                    if pattern.search(x):
+                        return pattern.sub(replace, x)
             return src
         except Exception as e:
             click.echo(click.style(f"There was an Error while masking {x} {e}", fg="red"))
@@ -274,9 +277,14 @@ class TextCleaner:
         try:
             if no_clean:
                 return x
+            if self.preprocess_patterns:
+                for pattern, replace in self.user_patterns:
+                    x = pattern.sub(replace, x)
+
             #phone can contains several words, so it should be done separately
             x = self.__phone.sub('<#P>', x)
             x = self.__words.sub(self.__replace_confident, x)
+            
             if self.custom_tokens_list:
                 x = self._flashtext_names.replace_keywords(x).strip()
 

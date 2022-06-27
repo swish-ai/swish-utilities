@@ -156,6 +156,26 @@ class FilteringTestCase(TestCase):
                 assert entry['oldvalue'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
                 assert entry['newvalue'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
 
+    def test_preprocess_patterns(self):
+        if os.path.isfile("tests/data/output/preprocess_patterns_processed.json"):
+            os.remove("tests/data/output/preprocess_patterns_processed.json")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/preprocess_patterns",
+                "--output_format", "json",
+                "--pattern", "[\w\-.]+\s+@[\w\-.]+:<#M>",
+                "--config", "tests/data/preprocess_patterns_config.json",
+                "--pretty_json", "--preprocess_patterns"]
+
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/preprocess_patterns_processed.json")
+        with open("tests/data/output/preprocess_patterns_processed.json", 'r') as f:
+            jsn = json.load(f)
+            for entry in jsn:
+                assert '@' not in entry['short_description']
 
     def test_patterns_with_config_and_cli_input(self):
         if os.path.isfile("tests/data/output/input_pattern_processed.csv"):
