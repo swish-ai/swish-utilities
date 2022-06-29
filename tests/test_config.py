@@ -156,6 +156,54 @@ class FilteringTestCase(TestCase):
                 assert entry['oldvalue'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
                 assert entry['newvalue'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
 
+    def test_empty(self):
+        if os.path.isfile("tests/data/output/no_json_processed.csv"):
+            os.remove("tests/data/output/no_json_processed.csv")
+        if os.path.isfile("tests/data/output/no_csv_processed.csv"):
+            os.remove("tests/data/output/no_csv_processed.csv")
+        if os.path.isfile("tests/data/output/white_space_processed.csv"):
+            os.remove("tests/data/output/white_space_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/no_data_files",
+                "--config", "default_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert not os.path.isfile("tests/data/output/no_json_processed.csv")
+        assert not os.path.isfile("tests/data/output/no_csv_processed.csv")
+        assert not os.path.isfile("tests/data/output/white_space_processed.csv")
+
+    def test_inner_json(self):
+        if os.path.isfile("tests/data/output/input_inner_json_processed.csv"):
+            os.remove("tests/data/output/input_inner_json_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output", 
+                "--input_dir", "tests/data/input_inner_json",
+                "--config", "default_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output/input_inner_json_processed.csv")
+        df = read_csv("tests/data/output/input_inner_json_processed.csv", encoding="UTF-8")
+        jsn = json.loads(df.to_json(orient='records'))
+
+        for entry in jsn:
+            assert entry['short_description'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+            assert entry['description'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+            assert entry['comments_and_work_notes'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+            assert entry['work_notes'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+            assert entry['close_notes'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+            assert entry['comments'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+            if entry['fieldname'] == 'test':
+                assert entry['oldvalue'] == 'test test@gmail.com 123456 +12 +123456789 192.168.11.2 www.google.com 778-62-8144'
+                assert entry['newvalue'] == 'test test@gmail.com 123456 +12 +123456789 192.168.11.2 www.google.com 778-62-8144'
+            else:
+                assert entry['oldvalue'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+                assert entry['newvalue'] == 'test  <#M>   <#>  +12 <#P>  <#I>   <#U>  <#P>'
+
     def test_preprocess_patterns(self):
         if os.path.isfile("tests/data/output/preprocess_patterns_processed.json"):
             os.remove("tests/data/output/preprocess_patterns_processed.json")
