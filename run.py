@@ -27,6 +27,7 @@ from types import SimpleNamespace
 from src.settings import Settings
 from src.file import File
 import pandas as pd
+from pandas.errors import EmptyDataError
 from pandas import read_csv, read_excel, DataFrame
 from src.cleaner import Masker, TextCleaner, CustomUserFile
 from time import time
@@ -363,11 +364,6 @@ def masking_execute(params, app_settings):
     params.data.destination_folder = params.output_dir
 
     mask_results = create_masker(params)
-    # Read input files and execute
-    # if params.input_file:
-    #     input_files = [params.input_file]
-    # else:
-    #     input_files = [f for f in os.listdir(params.input_dir) if os.path.isfile(os.path.join(params.input_dir, f))]
     input_files = []
     get_all_files(params, input_files)
     for f in input_files:
@@ -405,9 +401,6 @@ def cli_file_process(input_file, masker, params, app_settings):
         if not input_file.chunked:
             data = [data]
         for chunk in data:
-            # chunk = chunk.convert_dtypes(convert_boolean=True,
-            #                              convert_string=False)
-            # chunk = chunk.fillna(0)
             chunk.fillna(chunk.dtypes.replace({'float64': 0.0, 'O': 'NULL'}), downcast='infer', inplace=True)
 
             output_data = masker(chunk, no_pd=True, no_output_json=True)
@@ -426,6 +419,11 @@ def load_json_to_file_obj(file_object, encodings):
             f = open(file_object.filename, "r", encoding=enc)
             # Reading from file
             txt = f.read()
+            if len(txt) < 1000:
+                txt = txt.strip()
+            if not txt:
+                click.echo(click.style(f"File {file_object.filename} doesn't contain data", fg="red"))
+                return
             if encoding:
                 txt = txt.encode(encoding)
             data = json.loads(txt)
@@ -443,6 +441,10 @@ def load_json_to_file_obj(file_object, encodings):
     # # Checking the json structure
     if 'records' in data:
         file_object.data = DataFrame(data['records'])
+    elif 'data' in data:
+        file_object.data = DataFrame(data['data'])
+    elif isinstance(data, dict) and len(data) == 1:
+        file_object.data = DataFrame(next(iter(data.values())))
     else:
         file_object.data = DataFrame(data)
 
@@ -487,6 +489,9 @@ def cli_file_read(filename, encoding=None, csv_chunk=None):
                             file_object.data = read_csv(file_object.filename, encoding=enc, chunksize=csv_chunk)
                             file_object.chunked = True
                         break
+                    except EmptyDataError:
+                        click.echo(click.style(f"File {file_object.filename} doesn't contain data", fg="yellow"))
+                        return file_object
                     except Exception:
                         click.echo(click.style(f"Failed to read file {file_object.filename}" +
                                                f" using encoding {enc}", fg="yellow"))
