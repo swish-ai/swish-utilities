@@ -212,8 +212,8 @@ def copy_to_fixed_file(file_path):
     if os.path.isfile(out_file_path):
         os.remove(out_file_path)
 
-    with open(file_path) as f:
-        with open(out_file_path, 'a') as of:
+    with open(file_path, mode='r', encoding="utf-8") as f:
+        with open(out_file_path, mode='a', encoding="utf-8") as of:
             for piece in read_in_chunks(f):
                 of.write(piece.replace('\r', '<#__swish_r>'))
     return out_file_path
