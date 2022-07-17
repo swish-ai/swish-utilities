@@ -120,6 +120,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--preprocess_patterns', '-pp', is_flag=True, help=Help.preprocess_patterns, groups=['masking'])
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
+@dip_option('--fix_data', '-fd', is_flag=True, help=Help.fix_data, groups=['masking'])
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
 @click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
 @click.option('--debug', '-dg', help=Help.debug, is_flag=True)
@@ -198,6 +199,24 @@ def exec(params):
 
     message = f'Script has FINISHED'
     click.echo(message)
+
+def read_in_chunks(file_object, chunk_size=1024):
+    while True:
+        data = file_object.read(chunk_size)
+        if not data:
+            break
+        yield data
+
+def copy_to_fixed_file(file_path):
+    out_file_path = f'{file_path}.temp_swish'
+    if os.path.isfile(out_file_path):
+        os.remove(out_file_path)
+
+    with open(file_path) as f:
+        with open(out_file_path, 'a') as of:
+            for piece in read_in_chunks(f):
+                of.write(piece.replace('\r', '<#__swish_r>'))
+    return out_file_path
 
 
 def create_masker(mapping_params):
@@ -368,11 +387,28 @@ def masking_execute(params, app_settings):
     get_all_files(params, input_files)
     for f in input_files:
         input_file = cli_file_read(f, params.input_encoding,
-                                                csv_chunk=params.csv_chunk_size)
+                                                csv_chunk=params.csv_chunk_size,
+                                                fix_data=params.fix_data)
         if input_file.ext == 'csv' and params.output_format != 'csv':
             click.echo(click.style(NOT_CSV_FILE_WARNING, fg="yellow"))
         params.data.file_objects.append(input_file)
         cli_file_process(input_file, mask_results, params, app_settings)
+    
+    remove_swish_temps(params)
+
+
+def remove_swish_temps(params, cur_dir=None):
+    if cur_dir is None:
+        cur_dir = ''
+    
+    files = os.listdir(os.path.join(params.input_dir, cur_dir))
+    for f in files:
+        p = os.path.join(params.input_dir, cur_dir, f)
+        if os.path.isfile(p) and f.lower().endswith('.temp_swish'):
+            click.echo(f'Removing temp file {f}')
+            os.remove(os.path.join(params.input_dir, cur_dir, f))
+        if os.path.isdir(p):
+            remove_swish_temps(params, os.path.join(cur_dir, f))
 
 
 def get_all_files(params, out_res, cur_dir=None):
@@ -457,7 +493,7 @@ def get_encodings_list(encoding):
             encodings.append(enc)
     return encodings
 
-def cli_file_read(filename, encoding=None, csv_chunk=None):
+def cli_file_read(filename, encoding=None, csv_chunk=None, fix_data=False):
     view_name = os.path.split(filename)[-1]
     obj = {
         "selected": True,
@@ -481,12 +517,15 @@ def cli_file_read(filename, encoding=None, csv_chunk=None):
         try:
 
             if file_object.ext == 'csv':
+                csv_file_name = file_object.filename
+                if fix_data:
+                    csv_file_name = copy_to_fixed_file(file_object.filename)
                 for enc in encodings:
                     try:
                         if csv_chunk is None:
-                            file_object.data = read_csv(file_object.filename, encoding=enc)
+                            file_object.data = read_csv(csv_file_name, encoding=enc)
                         else:
-                            file_object.data = read_csv(file_object.filename, encoding=enc, chunksize=csv_chunk)
+                            file_object.data = read_csv(csv_file_name, encoding=enc, chunksize=csv_chunk)
                             file_object.chunked = True
                         break
                     except EmptyDataError:

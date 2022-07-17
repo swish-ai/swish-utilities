@@ -44,3 +44,4 @@ in parallel. The provided interval value is split based on this specification fo
     pretty_json: str = 'Pretty output json'
     debug: str = 'Print some debug output'
     preprocess_patterns: str = 'Preprocess patterns before any other text processing'
+    fix_data: str = 'Try to fix data problems'
