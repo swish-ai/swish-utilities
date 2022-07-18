@@ -207,16 +207,21 @@ def read_in_chunks(file_object, chunk_size=1024):
             break
         yield data
 
-def copy_to_fixed_file(file_path):
+def copy_to_fixed_file(file_path, encoding=None):
     out_file_path = f'{file_path}.temp_swish'
     if os.path.isfile(out_file_path):
         os.remove(out_file_path)
-
-    with open(file_path, mode='r', encoding="utf-8") as f:
-        with open(out_file_path, mode='a', encoding="utf-8") as of:
-            for piece in read_in_chunks(f):
-                of.write(piece.replace('\r', '<#__swish_r>'))
-    return out_file_path
+    elcodings = get_encodings_list(encoding)
+    for enc in elcodings:
+        try:
+            with open(file_path, mode='r', encoding=enc) as f:
+                with open(out_file_path, mode='a', encoding="utf-8") as of:
+                    for piece in read_in_chunks(f):
+                        of.write(piece.replace('\r', '<#__swish_r>'))
+            return out_file_path
+        except UnicodeDecodeError:
+            print(f"Faild to open using encoding {enc}")
+    raise DipException(f'Failed to read file {file_path}')
 
 
 def create_masker(mapping_params):
@@ -519,7 +524,7 @@ def cli_file_read(filename, encoding=None, csv_chunk=None, fix_data=False):
             if file_object.ext == 'csv':
                 csv_file_name = file_object.filename
                 if fix_data:
-                    csv_file_name = copy_to_fixed_file(file_object.filename)
+                    csv_file_name = copy_to_fixed_file(file_object.filename, encoding)
                 for enc in encodings:
                     try:
                         if csv_chunk is None:
