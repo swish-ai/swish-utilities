@@ -45,3 +45,5 @@ in parallel. The provided interval value is split based on this specification fo
     debug: str = 'Print some debug output'
     preprocess_patterns: str = 'Preprocess patterns before any other text processing'
     fix_data: str = 'Try to fix data problems'
+    skip_bad_lines: str = 'Skip csv bad lines'
+    set_dtype: str = 'Set pandas dtype to unicode'

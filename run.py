@@ -121,6 +121,8 @@ def manual_override(val, current_groups, kwargs):
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
 @dip_option('--fix_data', '-fd', is_flag=True, help=Help.fix_data, groups=['masking'])
+@dip_option('--skip_bad_lines', '-sb', is_flag=True, help=Help.skip_bad_lines, groups=['masking'])
+@dip_option('--set_dtype', '-sd', is_flag=True, help=Help.set_dtype, groups=['masking'])
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
 @click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
 @click.option('--debug', '-dg', help=Help.debug, is_flag=True)
@@ -393,7 +395,9 @@ def masking_execute(params, app_settings):
     for f in input_files:
         input_file = cli_file_read(f, params.input_encoding,
                                                 csv_chunk=params.csv_chunk_size,
-                                                fix_data=params.fix_data)
+                                                fix_data=params.fix_data,
+                                                set_dtype=params.set_dtype,
+                                                skip_bad_lines=params.skip_bad_lines)
         if input_file.ext == 'csv' and params.output_format != 'csv':
             click.echo(click.style(NOT_CSV_FILE_WARNING, fg="yellow"))
         params.data.file_objects.append(input_file)
@@ -498,7 +502,11 @@ def get_encodings_list(encoding):
             encodings.append(enc)
     return encodings
 
-def cli_file_read(filename, encoding=None, csv_chunk=None, fix_data=False):
+
+def cli_file_read(filename, encoding=None, csv_chunk=None, fix_data=False,
+                  set_dtype=False, skip_bad_lines=False):
+    dtype = 'unicode' if set_dtype else None
+    on_bad_lines = 'skip' if skip_bad_lines else None
     view_name = os.path.split(filename)[-1]
     obj = {
         "selected": True,
@@ -528,9 +536,9 @@ def cli_file_read(filename, encoding=None, csv_chunk=None, fix_data=False):
                 for enc in encodings:
                     try:
                         if csv_chunk is None:
-                            file_object.data = read_csv(csv_file_name, encoding=enc)
+                            file_object.data = read_csv(csv_file_name, encoding=enc, on_bad_lines=on_bad_lines, dtype=dtype)
                         else:
-                            file_object.data = read_csv(csv_file_name, encoding=enc, chunksize=csv_chunk)
+                            file_object.data = read_csv(csv_file_name, encoding=enc, chunksize=csv_chunk, on_bad_lines=on_bad_lines, dtype=dtype)
                             file_object.chunked = True
                         break
                     except EmptyDataError:
