@@ -89,12 +89,13 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--username', '-u', help=Help.username, default=None, groups=['extracting'])
 @dip_option('--password', '-p', help=Help.password, default='', groups=['extracting'])
 @dip_option('--start_date', '-s', help=Help.start_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
-            groups=['extracting'])
+            groups=['extracting'], swish_default='-')
 @dip_option('--end_date', '-e', help=Help.end_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
-            groups=['extracting'])
+            groups=['extracting'], swish_default='-')
 @dip_option('--url', '-j', help=Help.url, default=None, groups=['extracting'])
 @dip_option('--output_format', '-of', help=Help.output_format, default='csv',
             choices=['json', 'csv'], groups=['extracting', 'masking'])
+@dip_option('--date_column', '-dc', help=Help.date_column, default='', groups=['extracting'])
 @dip_option('--id_list_path', '-q', help=Help.id_list_path, default='', groups=['extracting'])
 @dip_option('--id_field_name', '-r', help=Help.id_field_name, default='sys_id', groups=['extracting'])
 @dip_option('--data_id_name', '-d', help=Help.data_id_name, default='', groups=['extracting'])
@@ -125,7 +126,8 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--set_dtype', '-sd', is_flag=True, help=Help.set_dtype, groups=['masking'])
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
 @click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
-@click.option('--debug', '-dg', help=Help.debug, is_flag=True)
+@dip_option('--all_dates', '-ad', help=Help.debug, is_flag=True, groups=['extracting'])
+@click.option('--debug', '-dg', help=Help.all_dates, is_flag=True)
 def cli(**kwargs):
     """Utility for ServiceNow data extraction and processing"""
     run_with_args(**kwargs)
@@ -273,7 +275,8 @@ def extracting_execute(params, app_settings, filter_by_column, data_proccessor, 
         else:
             api_resource = Extractor(params.extracting.start_date, params.extracting.end_date, 0,
                                      app_settings, filter_by_column=filter_by_column,
-                                     data_proccessor=data_proccessor, mask_results=mask_results)
+                                     data_proccessor=data_proccessor, mask_results=mask_results,
+                                     all_dates=params.extracting.all_dates, date_column=params.extracting.date_column)
             api_resource.api_extract(params)
 
             message = f'Total Added: {api_resource.total_added}, Total Failed Approximated: {api_resource.total_failed}'
