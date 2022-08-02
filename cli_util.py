@@ -9,6 +9,7 @@ import pathlib
 GROUPS = {}
 MAIN_GROPUS = {}
 INITIAL = {}
+SWISH_DEFAULTS = {}
 CHOICES = {}
 MAP_TO = {}
 ALL_OPTIONS = set()
@@ -49,6 +50,7 @@ def dip_option(*param_decls, **attrs):
             groups - to which group to map the value,
             map_to - changes in group prop name
     """
+
     ns = None
     if "ns" in attrs:
         ns = attrs["ns"]
@@ -69,6 +71,13 @@ def dip_option(*param_decls, **attrs):
         initial = attrs['initial']
         del attrs['initial']
         INITIAL[ns] = initial
+
+    swish_default = None
+    if "swish_default" in attrs:
+        swish_default = attrs['swish_default']
+        del attrs['swish_default']
+        SWISH_DEFAULTS[name] = swish_default
+
 
     map_to = None
     if "map_to" in attrs:
@@ -125,9 +134,13 @@ def add_group(params, name, values, current_groups, kwargs, manual_override):
     for val in values:
         manual_override(val, current_groups, kwargs)
         if kwargs[val] is None and current_groups[name][0]:
-            msg = f"Error: --{val} is required with for group option --{current_groups[name][1]}"
-            print(msg)
-            raise DipException(msg)
+            if SWISH_DEFAULTS.get(val):
+                setattr(opt, val, SWISH_DEFAULTS.get(val))
+                continue
+            else:
+                msg = f"Error: --{val} is required with for group option --{current_groups[name][1]}"
+                print(msg)
+                raise DipException(msg)
         if (name, val) in MAP_TO:
             setattr(opt, MAP_TO[(name, val)], kwargs[val])
         else:

@@ -47,3 +47,5 @@ in parallel. The provided interval value is split based on this specification fo
     fix_data: str = 'Try to fix data problems'
     skip_bad_lines: str = 'Skip csv bad lines'
     set_dtype: str = 'Set pandas dtype to unicode'
+    all_dates: str = 'Do not send specific dates for extraction'
+    date_column: str = 'Date column that will be used for extraction filtering'
