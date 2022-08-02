@@ -19,8 +19,16 @@ from cli_util import DipAuthException, DipException
 
 class Extractor:
     def __init__(self, start_date, end_date, thread_id, app_settings=None,
-                 filter_by_column=None, data_proccessor=None, mask_results=None):
+                 filter_by_column=None, data_proccessor=None, mask_results=None,
+                 all_dates=False, date_column=''):
 
+        if (start_date == '-' or end_date == '-') and not all_dates:
+            raise DipException('If --start_date or --end_date is not provides --all_date should be specified')
+
+        if start_date == '-':
+            start_date = datetime.datetime.now()
+        if end_date == '-':
+            end_date = datetime.datetime.now()
         self.settings = app_settings
         self.session = requests.Session()
 
@@ -31,9 +39,8 @@ class Extractor:
         self.response_size = 0
         self.maximum_trials_number = 2
         self.thread_params = None
-        self.start_date = None
-        self.end_date = None
-        self.thread_id = None
+        self.all_dates = all_dates
+        self.date_column = date_column
 
         self.start_date = start_date
         self.end_date = end_date
@@ -71,7 +78,7 @@ class Extractor:
                 custom=''
             )
             use_user_url = formated_url != params.extracting.url
-            while self.total_added < params.extracting.stop_limit and batch_start_date < batch_end_date:
+            while self.total_added < params.extracting.stop_limit and (batch_start_date < batch_end_date or self.all_dates):
 
                 if batch_end_date >= self.end_date:
                     batch_end_date = self.end_date
@@ -80,7 +87,9 @@ class Extractor:
                 self.offset = 0
 
                 self.__do_step(params, use_user_url, batch_start_date, batch_end_date)
-
+                if self.all_dates:
+                    #  If no dates specifiyed do only one step
+                    break
                 batch_start_date = batch_start_date + datetime.timedelta(hours=params.extracting.interval)
                 batch_end_date = batch_end_date + datetime.timedelta(hours=params.extracting.interval)
         except DipAuthException as e:
@@ -111,7 +120,11 @@ class Extractor:
             trial_number = 1
 
             try:
+                perv_offset = self.offset
                 self.handle_api_request(params, url, trial_number)
+                if self.offset == perv_offset:
+                    # no new records
+                    break
 
             except DipAuthException as e:
                 raise e
@@ -130,6 +143,13 @@ class Extractor:
         params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
 
     def __get_request_url(self, use_user_url, params, batch_start_date, batch_end_date):
+        parsed_url = urlparse(params.extracting.url)
+        path = parsed_url.path
+        date_column = 'sys_udated_on'
+        if path.endswith('/sys_audit'):
+            date_column = 'sys_created_on'
+        if self.date_column:
+            date_column = self.date_column
         # use user url, means that we are not constructing our sysparm_query
         # but using user provided url but we stil can replace some of its attributes such as
         # start_date and end_date
@@ -143,14 +163,18 @@ class Extractor:
         else:
             url = params.extracting.url
             if 'sysparm_query=' in url:
-                url += f'^sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}'
+                if not self.all_dates:
+                    url += f'^{date_column}>{batch_start_date}^{date_column}<{batch_end_date}'
             else:
                 if '?' not in url:
                     url += '?'
                 else:
                     url += '&'
-                url += f'sysparm_query=sys_created_on>{batch_start_date}^sys_created_on<{batch_end_date}'
-            url += f'&sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
+                if not self.all_dates:
+                    url += f'sysparm_query={date_column}>{batch_start_date}^{date_column}<{batch_end_date}'
+            if not url.endswith('&') and not url.endswith('?'):
+                url += '&'
+            url += f'sysparm_offset={self.offset}&sysparm_limit={params.extracting.batch_size}'
 
         message = f'Thread: {self.thread_id}, URL: {url}'
         print(message)
