@@ -250,6 +250,8 @@ def setup_cli(original_input, manual_override, **kwargs):
     load_auth(kwargs)
 
     current_groups = {key: (kwargs[val], val) for key, val in MAIN_GROPUS.items()}
+    for key, val in MAIN_GROPUS.items():
+        GROUPS.setdefault(key, [])
     params = SimpleNamespace()
     for name, values in GROUPS.items():
         add_group(params, name, values, current_groups, kwargs, manual_override)

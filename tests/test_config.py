@@ -74,10 +74,14 @@ class FilteringTestCase(TestCase):
             with open("tests/data/input/input.json", 'r') as f:
                 jsn2 = json.load(f)
                 for i, entry in enumerate(jsn2):
-                    assert jsn[i]['sys_created_by'] == sha256(entry['sys_created_by'].encode('utf-8')).hexdigest()
+                    s = sha256(str(entry['sys_created_by']).encode('utf-8')).hexdigest()
+                    s = f'<swish-anonymized-{s}>'
+                    assert jsn[i]['sys_created_by'] == s
                     # test conditional anonymization
                     if jsn2[i]['fieldname'] == 'state':
-                        assert jsn[i]['record_checkpoint'] == sha256(entry['record_checkpoint'].encode('utf-8')).hexdigest()
+                        s = sha256(str(entry['record_checkpoint']).encode('utf-8')).hexdigest()
+                        s = f'<swish-anonymized-{s}>'
+                        assert jsn[i]['record_checkpoint'] == s
                     else:
                         assert jsn[i]['record_checkpoint'] == entry['record_checkpoint']
 
@@ -85,7 +89,9 @@ class FilteringTestCase(TestCase):
                     if jsn2[i]['fieldname'] == 'short_description':
                         assert jsn[i]['tablename'] == entry['tablename']
                     elif jsn2[i]['fieldname'] == 'state':
-                        assert jsn[i]['tablename'] == sha256(entry['tablename'].encode('utf-8')).hexdigest()
+                        s = sha256(str(entry['tablename']).encode('utf-8')).hexdigest()
+                        s = f'<swish-anonymized-{s}>'
+                        assert jsn[i]['tablename'] == s
 
     def test_patterns_with_config(self):
         if os.path.isfile("tests/data/output/input_pattern_processed.csv"):

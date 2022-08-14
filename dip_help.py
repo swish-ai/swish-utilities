@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Help:
     mask: str = 'Mask existing data'
     extract: str = 'Extract data from ServiceNow'
+    scane: str = 'Performe PII Scane'
     proccess: str = 'Process extracted data'
     stop_limit: str = 'Maximum total records count that can be extracted'
     file_limit: str = 'Maximum amount of entires in the single file'

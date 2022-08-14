@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import os
 import json
 import re
+from time import time
 import click
 import pandas as pd
 from hashlib import sha256
@@ -21,6 +22,11 @@ MASK: int = 2
 ANONYMIZE: int = 1
 DROP: int = 3
 FILTER_BY_WHITE_LIST = 4
+
+def anonymize(x):
+    s = sha256(str(x).encode('utf-8')).hexdigest()
+    return f'<swish-anonymized-{s}>'
+
 
 class UnsupportedFile(Exception):
     """Raised when CustomUserFile selected unsupported type"""
@@ -145,22 +151,10 @@ class CustomUserFile:
             self.data = None
 
 
-class TextCleaner:
-
-    def __init__(self, custom_tokens_filename_list: None, 
-                important_token_file=None,
-                encodings=None, patterns=None,
-                preprocess_patterns=False):
-        """
-        Cleaner Class
-        compiling regexes and custom tokens file.
-        """
+class PatternsMixin:
+    def __init__(self, patterns):
         self.user_patterns = self.create_user_patterns(patterns)
-        self._custom_tokens_chunk = None
-        self._flashtext_names = KeywordProcessor(case_sensitive=False)
-        self.preprocess_patterns=preprocess_patterns
-
-        self.__phone = re.compile(
+        self._phone = re.compile(
             r'\+[0-9]{5,}|\+[0-9\.\ (\)-]{6,25}|\+[0-9(\)-]{1,6}[\ \.][0-9(\)\ \.-]{4,}|'
             r'\d{3}-\d{2}-\d{5,7}|'
             r'\+*\d{1,10}\ +\d{1,10}\S*|'
@@ -172,25 +166,16 @@ class TextCleaner:
             r'\+\d{2,4} \(?\d{1,4}\)? \d{1,4}|'
             r'\d{2,4}[-\s]\d{2,4}[-\s]\d{2,4}([-\s]\d{2,4})?')
 
-        self.__url = re.compile(r"(http[s]?://(www\.)?|www\.)\S+", re.IGNORECASE)
-        # self.__catalog = re.compile(r'\b(\d+[a-zA-Z]|[a-zA-Z]+\d)[\w\-\_\!\?\.\#\$\%\^\&\*\.\(\)\\\/]+\b')
+        self._url = re.compile(r"(http[s]?://(www\.)?|www\.)\S+", re.IGNORECASE)
 
-        self.__cc = re.compile(r'\d{3,4}-\d{3,4}-\d{3,4}-\d{3,4}')
-        self.__ip = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
-        self.__email = re.compile(r'[\w\-.]+@[\w\-.]+', re.UNICODE)
-        self.__special = re.compile(r'[\x00-\x1f]', re.UNICODE)
-        self.__numbers = re.compile(r'\b\d{6,}\b')
-        self.__space = re.compile(r'\s+')
-        self.__ssn = re.compile(r'\b([a-z]*)(\d{3}[-_\.]\d{2}[-_\.]\d{4})([a-z]*)\b')
+        self._cc = re.compile(r'\d{3,4}-\d{3,4}-\d{3,4}-\d{3,4}')
+        self._ip = re.compile(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}')
+        self._email = re.compile(r'[\w\-.]+@[\w\-.]+', re.UNICODE)
+        self._special = re.compile(r'[\x00-\x1f]', re.UNICODE)
+        self._numbers = re.compile(r'\b\d{6,}\b')
+        self._space = re.compile(r'\s+')
+        self._ssn = re.compile(r'\b([a-z]*)(\d{3}[-_\.]\d{2}[-_\.]\d{4})([a-z]*)\b')
 
-        self.__words = re.compile(WORDS_REGEX)
-
-        self.__custom_tokens = None
-        self.custom_tokens_list = set()
-        self.important_tokens_list = set()
-        self.set_important_tokens(important_token_file)
-        self.set_custom_tokens(custom_tokens_filename_list, encodings=encodings)
-    
     def create_user_patterns(self, patterns):
         res = []
         if not patterns:
@@ -203,6 +188,31 @@ class TextCleaner:
             else:
                 res.append((ptrn, USER_CUSTOM))
         return res
+
+
+class TextCleaner(PatternsMixin):
+
+    def __init__(self, custom_tokens_filename_list: None, 
+                important_token_file=None,
+                encodings=None, patterns=None,
+                preprocess_patterns=False):
+        """
+        Cleaner Class
+        compiling regexes and custom tokens file.
+        """
+        super().__init__(patterns)
+        
+        self._custom_tokens_chunk = None
+        self._flashtext_names = KeywordProcessor(case_sensitive=False)
+        self.preprocess_patterns=preprocess_patterns
+
+        self.__words = re.compile(WORDS_REGEX)
+
+        self.__custom_tokens = None
+        self.custom_tokens_list = set()
+        self.important_tokens_list = set()
+        self.set_important_tokens(important_token_file)
+        self.set_custom_tokens(custom_tokens_filename_list, encodings=encodings)
 
     def set_important_tokens(self, important_token_file):
 
@@ -243,25 +253,25 @@ class TextCleaner:
         try:
             src = match.group()
             x = src.strip()
-            if self.__special.search(x):
+            if self._special.search(x):
                 return ''
-            if self.__ssn.search(x):
+            if self._ssn.search(x):
                 return '\1 <#SSN> \3'
-            if self.__ip.search(x):
+            if self._ip.search(x):
                 return ' <#I> '
-            if self.__url.search(x):
+            if self._url.search(x):
                 return ' <#U> '
-            if self.__cc.search(x):
+            if self._cc.search(x):
                 return ' <#CC> '
-            if self.__email.search(x):
+            if self._email.search(x):
                 return ' <#M> '
-            if self.__phone.search(x):
+            if self._phone.search(x):
                 return ' <#P> '
             # if self.__catalog.search(x):
             #     return ' <#CG> '
-            if self.__numbers.search(x):
+            if self._numbers.search(x):
                 return ' <#> '
-            if self.__space.search(x):
+            if self._space.search(x):
                 return ' '
             if not self.preprocess_patterns:
                 for pattern, replace in self.user_patterns:
@@ -282,7 +292,7 @@ class TextCleaner:
                     x = pattern.sub(replace, x)
 
             #phone can contains several words, so it should be done separately
-            x = self.__phone.sub('<#P>', x)
+            x = self._phone.sub('<#P>', x)
             x = self.__words.sub(self.__replace_confident, x)
             
             if self.custom_tokens_list:
@@ -305,7 +315,7 @@ class TextCleaner:
         if method == MASK:
             return self.clean_custom_tokens_chunk(d)
         if method == ANONYMIZE:
-            return sha256(str(d).encode('utf-8')).hexdigest()
+            return anonymize(d)
         if method == DROP:
             return None
         return d
@@ -326,7 +336,7 @@ class TextCleaner:
     @staticmethod
     def anonymize_value(x):
         try:
-            return sha256(str(x).encode('utf-8')).hexdigest()
+            return anonymize(x)
         except Exception as e:
             click.echo(click.style(f"There was an Error while anonymizing {x}", fg="red"))
         return 'anonymizing_error'
@@ -353,16 +363,16 @@ class TextCleaner:
     @DeprecationWarning
     def old_transform(self, x):
         x = str(x)
-        x = self.__special.sub('', x)
-        x = self.__cc.sub(lambda m: ' <#CC> ', x)
-        x = self.__phone.sub(' <#P> ', x)
-        x = self.__email.sub(' <#M> ', x)
-        x = self.__url.sub(' <#U> ', x)
+        x = self._special.sub('', x)
+        x = self._cc.sub(lambda m: ' <#CC> ', x)
+        x = self._phone.sub(' <#P> ', x)
+        x = self._email.sub(' <#M> ', x)
+        x = self._url.sub(' <#U> ', x)
         # x = self.__catalog.sub(' <#CG> ', x)
-        x = self.__ip.sub(' <#I> ', x)
-        x = self.__numbers.sub(lambda m: ' <#> ', x)
-        x = self.__space.sub(' ', x)
-        x = self.__ssn.sub('\1 <#SSN> \3', x)
+        x = self._ip.sub(' <#I> ', x)
+        x = self._numbers.sub(lambda m: ' <#> ', x)
+        x = self._space.sub(' ', x)
+        x = self._ssn.sub('\1 <#SSN> \3', x)
 
         return x.strip()
 
@@ -371,7 +381,7 @@ class TextCleaner:
         self.__custom_tokens = re.compile(r"\b(" + r"|".join(self.custom_tokens_list) + r")\b", re.IGNORECASE)
         x = str(x)
         x = self.__custom_tokens.sub(' <#User> ', x)
-        x = self.__space.sub(' ', x)
+        x = self._space.sub(' ', x)
         return x.strip()
 
 @dataclass
@@ -519,3 +529,45 @@ class Masker:
                 output_data[column] = cleaner.anonymize(output_data[column].values, no_clean)
             if 'DROP' in methods and method == methods['DROP']:
                 output_data.drop(column, axis=1, inplace=True)
+
+
+class PIIScanner(PatternsMixin):
+    def __init__(self, input_file, params, app_settings):
+        super().__init__(None)
+        self.input_file = input_file
+        self.params = params
+        self.app_settings = app_settings
+
+    def proccess(self):
+        click.echo(f'Starting file scanning {self.input_file.filename}')
+        f0 = time()
+        input_file = self.input_file
+        params = self.params
+        if input_file.data is not None:
+            data = input_file.data
+            if not input_file.chunked:
+                data = [data]
+            for chunk in data:
+                chunk.fillna(chunk.dtypes.replace({'float64': 0.0, 'O': 'NULL'}), downcast='infer', inplace=True)
+                output_data = self.__check(chunk, no_pd=True, no_output_json=True)
+        else:
+            click.echo(click.style(f"File {input_file.filename} can not be processed", fg="red"))
+
+    def __check(self, items, no_pd=False, no_output_json=False):
+        if not no_pd and not items:
+            return items
+
+        if no_pd:
+            output_data = items
+        else:
+            output_data = pd.json_normalize(items)
+
+        for column in output_data.columns:
+            data = output_data[column].values
+            for d in data:
+                print(d)
+
+        if no_output_json:
+            return output_data
+
+        return output_data.to_dict(orient="records")

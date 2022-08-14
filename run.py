@@ -29,7 +29,7 @@ from src.file import File
 import pandas as pd
 from pandas.errors import EmptyDataError
 from pandas import read_csv, read_excel, DataFrame
-from src.cleaner import Masker, TextCleaner, CustomUserFile
+from src.cleaner import Masker, PIIScanner, TextCleaner, CustomUserFile
 from time import time
 
 try:
@@ -75,6 +75,7 @@ def manual_override(val, current_groups, kwargs):
 # Put new parameters here v
 @click.command()
 @dip_option('--mask', '-m', is_flag=True, help=Help.mask, ns='masking', initial=mask_data)
+@dip_option('--scane', '-sc', is_flag=True, help=Help.extract, ns="scane")
 @dip_option('--extract', '-z', is_flag=True, help=Help.extract, ns="extracting")
 @dip_option('--proccess', '-w', is_flag=True, help=Help.proccess, ns="processing")
 @dip_option('--stop_limit', '-l', help=Help.stop_limit, default=1000000000, groups=['extracting'])
@@ -103,14 +104,14 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--output_dir', '-od', help=Help.output_dir, default='extracting_output', groups=['extracting', 'masking'])
 @dip_option('--out_prop_name', '-o', help=Help.out_prop_name, default='documentkey',
             groups=['extracting', 'processing'])
-@dip_option('--input_dir', '-id', help=Help.input_dir, default=None, groups=['masking'])
-@dip_option('--input_file', '-if', help=Help.input_file, default='', groups=['masking'])
-@dip_option('--csv_chunk_size', '-cs', help=Help.csv_chunk_size, default=10000, groups=['masking'])
+@dip_option('--input_dir', '-id', help=Help.input_dir, default=None, groups=['masking', 'scane'])
+@dip_option('--input_file', '-if', help=Help.input_file, default='', groups=['masking', 'scane'])
+@dip_option('--csv_chunk_size', '-cs', help=Help.csv_chunk_size, default=10000, groups=['masking', 'scane'])
 @dip_option('--mapping_path', '-mp', help=Help.mapping_path, default=None, groups=['masking'])
 @dip_option('--custom_token_dir', '-ct', help=Help.custom_token_dir, default='', groups=['masking'])
 @dip_option('--important_token_file', '-it', help=Help.important_token_file, default=None, groups=['masking'])
 @dip_option('--input_sources', '-is', help=Help.input_sources, default='', groups=['processing'])
-@dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking', 'extracting'])
+@dip_option('--input_encoding', '-ie', help=Help.input_encoding, default='UTF-8', groups=['masking', 'extracting', 'scane'])
 @dip_option('--white_list', '-wl', help=Help.input_encoding, default=[], 
             groups=['masking', 'extracting'], multiple=True)
 @dip_option('--out_props_csv_path', '-op', help=Help.out_props_csv_path, default='',
@@ -122,7 +123,7 @@ def manual_override(val, current_groups, kwargs):
 @click.option('--version', '-v', help=Help.version, is_flag=True, callback=print_version,
               expose_value=False, is_eager=True)
 @dip_option('--fix_data', '-fd', is_flag=True, help=Help.fix_data, groups=['masking'])
-@dip_option('--skip_bad_lines', '-sb', is_flag=True, help=Help.skip_bad_lines, groups=['masking'])
+@dip_option('--skip_bad_lines', '-sb', is_flag=True, help=Help.skip_bad_lines, groups=['masking', 'scane'])
 @dip_option('--set_dtype', '-sd', is_flag=True, help=Help.set_dtype, groups=['masking'])
 @click.option('--config', '-cg', help=Help.config, default=None, type=click.STRING)
 @click.option('--auth_file', '-af', help=Help.authentication_file, default=None, type=click.STRING)
@@ -193,6 +194,12 @@ def exec(params):
         try:
             if params.processing.enabled:
                 processing_execute(params, app_settings)
+        except Exception as error:
+            raise DipException(f'Processing error, {error}')
+        
+        try:
+            if params.scane.enabled:
+                scan_pii(params.scane, app_settings)
         except Exception as error:
             raise DipException(f'Processing error, {error}')
 
@@ -354,6 +361,24 @@ def extracting_multithreading_execution(params, app_settings, filter_by_column, 
     app_settings.logger.info(message)
     click.echo(click.style(message, fg="bright_magenta", underline=True))
 
+
+def scan_pii(params, app_settings):
+    message = f'Started PII Scane'
+    click.echo(message)
+    app_settings.logger.info(message)
+
+    # Assert mandatory files/dirs
+    assert os.path.isdir(params.input_dir), 'input file is not a valid directory name'
+
+    input_files = []
+    get_all_files(params, input_files)
+    for f in input_files:
+        input_file = cli_file_read(f, params.input_encoding,
+                                   csv_chunk=params.csv_chunk_size,
+                                   fix_data=False,
+                                   set_dtype=False,
+                                   skip_bad_lines=params.skip_bad_lines)
+        PIIScanner(input_file, params, app_settings).proccess()
 
 def masking_execute(params, app_settings):
 
