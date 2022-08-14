@@ -29,7 +29,7 @@ class TestExtractor(TestCase):
         )
         url = extractor._Extractor__get_request_url(False, params, start_date, end_date)
         parsed = parse.parse_qs(parse.urlsplit(url).query)
-        assert 'sys_udated_on' not in str(parsed['sysparm_query'])
+        assert 'sys_updated_on' not in str(parsed['sysparm_query'])
         assert 'sys_created_on' in str(parsed['sysparm_query'])
 
     def test_filter_dates_column_custom_date_column(self):
@@ -55,7 +55,7 @@ class TestExtractor(TestCase):
         )
         url = extractor._Extractor__get_request_url(False, params, start_date, end_date)
         parsed = parse.parse_qs(parse.urlsplit(url).query)
-        assert 'sys_udated_on' not in str(parsed['sysparm_query'])
+        assert 'sys_updated_on' not in str(parsed['sysparm_query'])
         assert 'sys_created_on' not in str(parsed['sysparm_query'])
         assert 'qwerty' in str(parsed['sysparm_query'])
 
@@ -83,7 +83,7 @@ class TestExtractor(TestCase):
         )
         url = extractor._Extractor__get_request_url(False, params, start_date, end_date)
         parsed = parse.parse_qs(parse.urlsplit(url).query)
-        assert 'sys_udated_on'  not in str(parsed['sysparm_query'])
+        assert 'sys_updated_on'  not in str(parsed['sysparm_query'])
         assert 'sys_created_on' not in str(parsed['sysparm_query'])
 
     def test_filter_dates_columnnon_non_sys_audit(self):
@@ -109,5 +109,5 @@ class TestExtractor(TestCase):
         )
         url = extractor._Extractor__get_request_url(False, params, start_date, end_date)
         parsed = parse.parse_qs(parse.urlsplit(url).query)
-        assert 'sys_udated_on' in str(parsed['sysparm_query'])
+        assert 'sys_updated_on' in str(parsed['sysparm_query'])
         assert 'sys_created_on' not in str(parsed['sysparm_query'])
