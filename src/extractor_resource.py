@@ -145,7 +145,7 @@ class Extractor:
     def __get_request_url(self, use_user_url, params, batch_start_date, batch_end_date):
         parsed_url = urlparse(params.extracting.url)
         path = parsed_url.path
-        date_column = 'sys_udated_on'
+        date_column = 'sys_updated_on'
         if path.endswith('/sys_audit'):
             date_column = 'sys_created_on'
         if self.date_column:
