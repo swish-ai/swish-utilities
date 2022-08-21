@@ -79,6 +79,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--extract', '-z', is_flag=True, help=Help.extract, ns="extracting")
 @dip_option('--proccess', '-w', is_flag=True, help=Help.proccess, ns="processing")
 @dip_option('--stop_limit', '-l', help=Help.stop_limit, default=1000000000, groups=['extracting'])
+@dip_option('--max_rows_in_file', '-mr', help=Help.max_rows_in_file, default=-1, groups=['scane'])
 @dip_option('--file_limit', '-f', help=Help.file_limit, default=40000000, groups=['extracting'])
 @dip_option('--interval', '-i', type=click.IntRange(1, sys.maxsize),
             help=Help.interval, default=24, groups=['extracting'])
@@ -199,7 +200,7 @@ def exec(params):
         
         try:
             if params.scane.enabled:
-                scan_pii(params.scane, app_settings)
+                scane_pii(params.scane, app_settings)
         except Exception as error:
             raise DipException(f'Processing error, {error}')
 
@@ -362,7 +363,7 @@ def extracting_multithreading_execution(params, app_settings, filter_by_column, 
     click.echo(click.style(message, fg="bright_magenta", underline=True))
 
 
-def scan_pii(params, app_settings):
+def scane_pii(params, app_settings):
     message = f'Started PII Scane'
     click.echo(message)
     app_settings.logger.info(message)
@@ -371,14 +372,31 @@ def scan_pii(params, app_settings):
     assert os.path.isdir(params.input_dir), 'input file is not a valid directory name'
 
     input_files = []
+    res = {}
+    res_for_files = {}
     get_all_files(params, input_files)
     for f in input_files:
+        res_for_file = {}
+        res_for_files = {}
+        res_for_files[f] = res_for_file
         input_file = cli_file_read(f, params.input_encoding,
                                    csv_chunk=params.csv_chunk_size,
                                    fix_data=False,
                                    set_dtype=False,
                                    skip_bad_lines=params.skip_bad_lines)
-        PIIScanner(input_file, params, app_settings).proccess()
+        PIIScanner(input_file, params, app_settings, params.max_rows_in_file).proccess(res, res_for_file)
+    
+    for fn, out in res_for_files.items():
+        if out.items() and [v for v in out.values() if v]:
+            click.echo(click.style(f"{fn} results:", fg="green"))
+            for key, val in out.items():
+                if val:
+                    click.echo(click.style(f'    {key} {val}', fg="bright_green"))
+    if res.items() and [v for v in res.values() if v]:
+        click.echo(click.style(f"All files results", fg="yellow"))
+        for key, val in res.items():
+            if val:
+                click.echo(click.style(f'    {key} {val}', fg="bright_yellow"))
 
 def masking_execute(params, app_settings):
 

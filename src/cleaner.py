@@ -165,6 +165,13 @@ class PatternsMixin:
             r'\+?\(?\+?\d{1,3}\)?[-\s]\d{1,3}[-\s]\d{1,4}[-\s]\d{1,4}|'
             r'\+\d{2,4} \(?\d{1,4}\)? \d{1,4}|'
             r'\d{2,4}[-\s]\d{2,4}[-\s]\d{2,4}([-\s]\d{2,4})?')
+        
+        self._phone_strict = re.compile(
+            r'\+[0-9]{5,}|\+[0-9\.\ (\)-]{6,25}|\+[0-9(\)-]{1,6}[\ \.][0-9(\)\ \.-]{4,}|'
+            r'\+\d{2,4} \d{2,5} \d{2,7} \(?\d{2,4}\)?|'
+            r'\+\d{2,4} \d{1,5} \d{2,7} \d{1,7} (\d{1,7})?|'
+            r'\+\d{2,4} \d{1,5} \d{2,7}( \d{1,7})?( \d{1,7})?|'
+            r'\+\d{2,4} \(?\d{1,4}\)? \d{1,4}')
 
         self._url = re.compile(r"(http[s]?://(www\.)?|www\.)\S+", re.IGNORECASE)
 
@@ -532,28 +539,29 @@ class Masker:
 
 
 class PIIScanner(PatternsMixin):
-    def __init__(self, input_file, params, app_settings):
+    def __init__(self, input_file, params, app_settings, max_rows_in_file=-1):
         super().__init__(None)
+        self.preprocess_patterns = False
+        self.max_rows_in_file = max_rows_in_file
         self.input_file = input_file
         self.params = params
         self.app_settings = app_settings
+        self.curr_row = 0
 
-    def proccess(self):
+    def proccess(self, out, out2):
         click.echo(f'Starting file scanning {self.input_file.filename}')
-        f0 = time()
         input_file = self.input_file
-        params = self.params
         if input_file.data is not None:
             data = input_file.data
             if not input_file.chunked:
                 data = [data]
             for chunk in data:
                 chunk.fillna(chunk.dtypes.replace({'float64': 0.0, 'O': 'NULL'}), downcast='infer', inplace=True)
-                output_data = self.__check(chunk, no_pd=True, no_output_json=True)
+                self.__check(out, out2, chunk, no_pd=True, no_output_json=True)
         else:
             click.echo(click.style(f"File {input_file.filename} can not be processed", fg="red"))
 
-    def __check(self, items, no_pd=False, no_output_json=False):
+    def __check(self, out, out2, items, no_pd=False, no_output_json=False):
         if not no_pd and not items:
             return items
 
@@ -561,13 +569,42 @@ class PIIScanner(PatternsMixin):
             output_data = items
         else:
             output_data = pd.json_normalize(items)
-
+        
         for column in output_data.columns:
+            confs = out.setdefault(column, set())
+            confs2 = out2.setdefault(column, set())
             data = output_data[column].values
             for d in data:
-                print(d)
+                if self.max_rows_in_file != -1 and self.curr_row > self.max_rows_in_file:
+                    return
+                l = self.__check_text(d)
+                confs.update(l)
+                confs2.update(l)
+                self.curr_row += 1
 
-        if no_output_json:
-            return output_data
 
-        return output_data.to_dict(orient="records")
+    def __check_text(self, src):
+        res = []
+        try:
+            x = str(src).strip()
+            if self._ssn.search(x):
+                res.append('SSN')
+            if self._ip.search(x):
+                res.append('IP address')
+            if self._url.search(x):
+                # try to ignore snow relation link
+                try:
+                    jsn = json.loads(x.replace("'", '"'))
+                    if 'link' not in jsn:
+                        res.append('URL')
+                except Exception as e:
+                    res.append('URL')
+            if self._cc.search(x):
+                res.append('Credit Card')
+            if self._email.search(x):
+                res.append('Email')
+            if self._phone_strict.search(x):
+                res.append('Phone')
+        except Exception as e:
+            click.echo(click.style(f"There was an Error while scanning {x} {e}", fg="red"))
+        return res

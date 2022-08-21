@@ -50,3 +50,4 @@ in parallel. The provided interval value is split based on this specification fo
     set_dtype: str = 'Set pandas dtype to unicode'
     all_dates: str = 'Do not send specific dates for extraction'
     date_column: str = 'Date column that will be used for extraction filtering'
+    max_rows_in_file: str = 'Maximum count of rows per file that will be processed while scanning for PII. -1 indicates that all the rows will be processed'
