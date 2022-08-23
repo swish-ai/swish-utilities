@@ -27,6 +27,7 @@ from types import SimpleNamespace
 from src.settings import Settings
 from src.file import File
 import pandas as pd
+from pandas.io.parsers import TextFileReader
 from pandas.errors import EmptyDataError
 from pandas import read_csv, read_excel, DataFrame
 from src.cleaner import Masker, TextCleaner, CustomUserFile
@@ -447,7 +448,10 @@ def cli_file_process(input_file, masker, params, app_settings):
     if input_file.data is not None:
         data = input_file.data
         if not input_file.chunked:
-            data = [data]
+            if isinstance(data, TextFileReader):
+                data = [data.read()]
+            else:    
+                data = [data]
         for chunk in data:
             chunk.fillna(chunk.dtypes.replace({'float64': 0.0, 'O': 'NULL'}), downcast='infer', inplace=True)
 
@@ -538,18 +542,27 @@ def cli_file_read(filename, encoding=None, csv_chunk=None, fix_data=False,
                     csv_file_name = copy_to_fixed_file(file_object.filename, encoding)
                 for enc in encodings:
                     try:
-                        if csv_chunk is None:
-                            file_object.data = read_csv(csv_file_name, encoding=enc, on_bad_lines=on_bad_lines, dtype=dtype)
+                        if 'on_bad_lines' in inspect.getfullargspec(read_csv).args:
+                            if csv_chunk is None:
+                                file_object.data = read_csv(csv_file_name, encoding=enc, on_bad_lines=on_bad_lines, dtype=dtype)
+                            else:
+                                file_object.data = read_csv(csv_file_name, encoding=enc, chunksize=csv_chunk, on_bad_lines=on_bad_lines, dtype=dtype)
+                                file_object.chunked = True
                         else:
-                            file_object.data = read_csv(csv_file_name, encoding=enc, chunksize=csv_chunk, on_bad_lines=on_bad_lines, dtype=dtype)
-                            file_object.chunked = True
+                            if on_bad_lines:
+                                click.echo(click.style(f"Current pandas version does not support on_bad_lines", fg="yellow"))
+                            if csv_chunk is None:
+                                file_object.data = read_csv(csv_file_name, encoding=enc, dtype=dtype)
+                            else:
+                                file_object.data = read_csv(csv_file_name, encoding=enc, chunksize=csv_chunk, dtype=dtype)
+                                file_object.chunked = True
                         break
                     except EmptyDataError:
                         click.echo(click.style(f"File {file_object.filename} doesn't contain data", fg="yellow"))
                         return file_object
-                    except Exception:
+                    except Exception as e:
                         click.echo(click.style(f"Failed to read file {file_object.filename}" +
-                                               f" using encoding {enc}", fg="yellow"))
+                                               f" using encoding {enc}, Exception {e}", fg="yellow"))
                 if file_object.data is None:
                     click.echo(click.style(f"Failed to read file {file_object.filename}", fg="red"))
             if file_object.ext == 'json':
