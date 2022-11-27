@@ -68,6 +68,10 @@ class Extractor:
                 'Content-type': 'application/json'
             }
 
+            if params.extracting.token:
+                token = params.extracting.token
+                params.extracting.headers['cookie'] = f'glide_user_activity={token}'
+
             self.__setup_auth(params)
 
             batch_start_date = self.start_date
@@ -137,10 +141,11 @@ class Extractor:
 
     def __setup_auth(self, params):
         password = params.extracting.password
-        if not password:
-            password = getpass.getpass(prompt='Password: ', stream=None)
+        if not params.extracting.token:
+            if not password:
+                password = getpass.getpass(prompt='Password: ', stream=None)
 
-        params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
+            params.extracting.auth = HTTPBasicAuth(params.extracting.username, password)
 
     def __get_request_url(self, use_user_url, params, batch_start_date, batch_end_date):
         parsed_url = urlparse(params.extracting.url)
@@ -185,7 +190,10 @@ class Extractor:
     def handle_api_request(self, params, url, trial_number):
 
         t1 = time()
-        resp = self.session.get(url, headers=params.extracting.headers, auth=params.extracting.auth)
+        if params.extracting.token:
+            resp = self.session.get(url, headers=params.extracting.headers)
+        else:
+            resp = self.session.get(url, headers=params.extracting.headers, auth=params.extracting.auth)
         if resp.status_code == 401:
             raise DipAuthException('Authentication failure')
 

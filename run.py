@@ -9,6 +9,7 @@ import requests
 import logging
 import logging.handlers
 from flashtext import KeywordProcessor
+from src.token_api import get_snow_token
 ###### end of work around
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
@@ -77,6 +78,7 @@ def manual_override(val, current_groups, kwargs):
 @click.command()
 @dip_option('--mask', '-m', is_flag=True, help=Help.mask, ns='masking', initial=mask_data)
 @dip_option('--extract', '-z', is_flag=True, help=Help.extract, ns="extracting")
+@dip_option('--token_get', '-tg', is_flag=True, help=Help.token_get, ns="token_get")
 @dip_option('--proccess', '-w', is_flag=True, help=Help.proccess, ns="processing")
 @dip_option('--stop_limit', '-l', help=Help.stop_limit, default=1000000000, groups=['extracting'])
 @dip_option('--file_limit', '-f', help=Help.file_limit, default=40000000, groups=['extracting'])
@@ -87,8 +89,11 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--thread_id', '-t', help=Help.thread_id, default=0, groups=['extracting'])
 @dip_option('--extension', '-y', help=Help.extension, default='json', groups=['extracting'])
 @dip_option('--compress', '-c', help=Help.compress, default=False, groups=['extracting', 'masking'])
-@dip_option('--username', '-u', help=Help.username, default=None, groups=['extracting'])
-@dip_option('--password', '-p', help=Help.password, default='', groups=['extracting'])
+@dip_option('--username', '-u', help=Help.username, default='', groups=['extracting', 'token_get'])
+@dip_option('--password', '-p', help=Help.password, default='', groups=['extracting', 'token_get'])
+@dip_option('--token', '-tk', help=Help.token, default='', groups=['extracting'])
+@dip_option('--mfa', '-ms', help=Help.mfa, default='', groups=['token_get'])
+@dip_option('--snow_url', '-tc', help=Help.snow_url, default=None, groups=['token_get'])
 @dip_option('--start_date', '-s', help=Help.start_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
             groups=['extracting'], swish_default='-')
 @dip_option('--end_date', '-e', help=Help.end_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
@@ -179,6 +184,12 @@ def exec(params):
     app_settings = Settings('base')
 
     try:
+        if params.token_get.enabled:
+            params.extracting.password
+            print(f'{params.token_get.username}  {params.token_get.password}  {params.token_get.snow_url}')
+            token = get_snow_token(params.token_get.snow_url, params.token_get.username, params.token_get.password, params.token_get.mfa)
+            click.echo(token)
+
         if params.extracting.enabled and params.masking.enabled:
             params.masking.input_dir = params.extracting.output_dir
 
