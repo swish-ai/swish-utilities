@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Help:
     mask: str = 'Mask existing data'
     extract: str = 'Extract data from ServiceNow'
+    token_get: str = 'Get ServiceNow auth token'
     proccess: str = 'Process extracted data'
     stop_limit: str = 'Maximum total records count that can be extracted'
     file_limit: str = 'Maximum amount of entires in the single file'
@@ -16,6 +17,9 @@ class Help:
 in parallel. The provided interval value is split based on this specification for achieving the concurrency.'
     username: str = 'ServiceNow acout username'
     password: str = 'ServiceNow acout password'
+    token: str = 'ServiceNow acout token'
+    mfa: str = 'Multifactor authentication code'
+    snow_url:str = 'ServiceNow base url'
     start_date: str = 'Extraction start date in format YYYY-mm-dd'
     end_date: str = 'Extraction end date in format YYYY-mm-dd'
     url: str = 'Specification of ServiceNow table and filter in RestAPI terminology'
