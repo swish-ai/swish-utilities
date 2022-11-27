@@ -33,6 +33,7 @@ runs:
       shell: bash
       run: |
         echo "VERSION='${{ inputs.version }}'" > version.py
+        pip3 install --upgrade pip
         pip3 install -r requirements.txt
         pip3 install pyinstaller
         pyinstaller --clean --onefile \
