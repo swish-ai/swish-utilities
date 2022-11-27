@@ -152,7 +152,7 @@ jobs:
     runs-on: macos-latest
     strategy:
       matrix:
-        python-version: [="3.9"]
+        python-version: ["3.9"]
     outputs:
       artifact-path: ${{ steps.build-pyinstaller.outputs.artifact-path}}
     steps:
