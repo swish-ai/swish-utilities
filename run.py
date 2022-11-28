@@ -93,7 +93,7 @@ def manual_override(val, current_groups, kwargs):
 @dip_option('--password', '-p', help=Help.password, default='', groups=['extracting', 'token_get'])
 @dip_option('--token', '-tk', help=Help.token, default='', groups=['extracting'])
 @dip_option('--mfa', '-ms', help=Help.mfa, default='', groups=['token_get'])
-@dip_option('--out_token_file', '-ot', help=Help.mfa, default='', groups=['token_get'])
+@dip_option('--out_token_file', '-ot', help=Help.out_token_file, default='', groups=['token_get'])
 @dip_option('--snow_url', '-tc', help=Help.snow_url, default=None, groups=['token_get'])
 @dip_option('--start_date', '-s', help=Help.start_date, default=None, type=click.DateTime(formats=["%Y-%m-%d"]),
             groups=['extracting'], swish_default='-')
@@ -187,10 +187,11 @@ def exec(params):
     try:
         if params.token_get.enabled:
             token = get_snow_token(params.token_get.snow_url, params.token_get.username, params.token_get.password, params.token_get.mfa)
-            click.echo(token)
             if params.token_get.out_token_file:
                 with open(params.token_get.out_token_file, 'w+') as f:
                     f.write(token)
+            else:
+                click.echo(token)
 
         if params.extracting.enabled and params.masking.enabled:
             params.masking.input_dir = params.extracting.output_dir
