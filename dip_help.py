@@ -19,6 +19,7 @@ in parallel. The provided interval value is split based on this specification fo
     password: str = 'ServiceNow acout password'
     token: str = 'ServiceNow acout token'
     mfa: str = 'Multifactor authentication code'
+    out_token_file: str = 'Output file for the token'
     snow_url:str = 'ServiceNow base url'
     start_date: str = 'Extraction start date in format YYYY-mm-dd'
     end_date: str = 'Extraction end date in format YYYY-mm-dd'

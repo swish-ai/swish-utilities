@@ -113,7 +113,7 @@ def validate_code(base_url, f_sc, code=None):
     return cookies, next_location
 
 def finalize_token(token):
-    return f'token_start|{token}|token_end'
+    return token
 
 def get_snow_token(base_url, username, password, code=None):
     cookies = fetch_server_root(base_url)
