@@ -135,5 +135,5 @@ def get_snow_token(base_url, username, password, code=None):
         cookies.update(v_cookies)
     else:
         print("Authentication Error")
-        exit(1)
+        finalize_token('error')
     return finalize_token(cookies["glide_user_activity"])
