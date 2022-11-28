@@ -76,3 +76,4 @@ swish-utilities*.spec
 
 tmp/
 for_test/
+extraction_config

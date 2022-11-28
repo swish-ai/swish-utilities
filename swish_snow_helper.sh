@@ -138,12 +138,12 @@ read_periud () {
         delta_str="+$days_range days"
         mac_delta_str="-v+""$days_range""d"
     fi
-    end_date=`date -d "$start_date $delta_str" 2>/dev/null` 
-    if [ $? ]; then
+ 
+    end_date=`date +%Y-%m-%d -d "$start_date $delta_str"`
+    if [ $? -ne 0 ]; then
+	echo $end_date
         end_date=`date -j -f %Y-%m-%d $mac_delta_str $start_date +%Y-%m-%d`
     fi
-    echo "=============="
-    echo $end_date
 }
 
 
@@ -196,7 +196,8 @@ echo
 ./swish-utilities --extract \
 --url "$snow_base_url"/api/now/table/sys_audit?sysparm_query=tablename=incident \
 --token "$token" \
---all_dates \
+--start_date "$start_date" \
+--end_date "$end_date" \
 --config "$config_json"
 
 echo "Finished scrip execution with status code $?"
