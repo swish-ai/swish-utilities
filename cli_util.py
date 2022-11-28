@@ -117,9 +117,6 @@ def validate_params(params, type_):
         if not os.path.isdir(params.output_dir):
             pathlib.Path(params.output_dir).mkdir(parents=True, exist_ok=True)
 
-        message = f'{type_} output directory is "{params.output_dir}'
-        print(message)
-
 
 def add_group(params, name, values, current_groups, kwargs, manual_override):
     opt = SimpleNamespace()
