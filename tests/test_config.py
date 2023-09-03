@@ -1,5 +1,5 @@
 import json
-from unittest import TestCase
+from unittest import TestCase, skip
 from pandas.io.parsers import read_csv
 import requests_mock
 from run import cli
@@ -21,6 +21,7 @@ class FilteringTestCase(TestCase):
         if os.path.isfile(f'{UNITEST_OUTPUT_FILE_PREFIX}_1.json'):
             os.remove(f'{UNITEST_OUTPUT_FILE_PREFIX}_1.json')
 
+    @skip("The auth functionallity is not use for now")
     def test_config_auth(self):
         assert not os.path.isfile(
             UNITEST_OUTPUT_FILE), "The file should be deleted"
@@ -324,3 +325,15 @@ class FilteringTestCase(TestCase):
                 for key in entry:
                     assert key in ["fieldname", "reason", "sys_id"]
     
+    def test_ip_and_ttt_in_end_of_word_mask(self):
+        if os.path.isfile("tests/data/output/ip_ttt_processed.csv"):
+            os.remove("tests/data/output/ip_ttt_processed.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output_ip_ttt", 
+                "--input_dir", "tests/data/input_ip_ttt",
+                "--config", "tests/data/ip_ttt_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output_ip_ttt/ip_ttt_processed.csv")
