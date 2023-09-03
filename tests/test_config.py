@@ -326,8 +326,8 @@ class FilteringTestCase(TestCase):
                     assert key in ["fieldname", "reason", "sys_id"]
     
     def test_ip_and_ttt_in_end_of_word_mask(self):
-        if os.path.isfile("tests/data/output/ip_ttt_processed.csv"):
-            os.remove("tests/data/output/ip_ttt_processed.csv")
+        if os.path.isfile("tests/data/output_ip_ttt/ip_ttt_processed.csv"):
+            os.remove("tests/data/output_ip_ttt/ip_ttt_processed.csv")
 
         args = ["--mask", "--output_dir", "tests/data/output_ip_ttt", 
                 "--input_dir", "tests/data/input_ip_ttt",
@@ -337,3 +337,19 @@ class FilteringTestCase(TestCase):
         print(result.output)
         assert result.exit_code == 0
         assert os.path.isfile("tests/data/output_ip_ttt/ip_ttt_processed.csv")
+    
+    def test_file_with_multiple_extensions_mask(self):
+        if os.path.isfile("tests/data/output_multi_extensions/test_multi_processed.multi.csv"):
+            os.remove("tests/data/output_multi_extensions/test_multi_processed.multi.csv")
+        if os.path.isfile("tests/data/output_multi_extensions/test_multi_2_processed.multi.csv"):
+            os.remove("tests/data/output_multi_extensions/test_multi_2_processed.multi.csv")
+
+        args = ["--mask", "--output_dir", "tests/data/output_multi_extensions", 
+                "--input_dir", "tests/data/input_multi_extensions",
+                "--config", "default_config.json"]
+        runner = CliRunner()
+        result = runner.invoke(cli, args, catch_exceptions=False)
+        print(result.output)
+        assert result.exit_code == 0
+        assert os.path.isfile("tests/data/output_multi_extensions/test_multi_processed.multi.csv")
+        assert os.path.isfile("tests/data/output_multi_extensions/test_multi_2_processed.multi.csv")
