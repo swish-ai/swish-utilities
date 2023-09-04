@@ -18,10 +18,18 @@ class File:
         self.chunked = False
         self.current_chunk = 0
         self.dir_name = os.path.dirname(filename)
+        
+        # This is for file with multiple extensions e.g. filename.users.csv
+        self.extra_ext = None
 
         # Extras
         try:
-            self.non_extension_part = os.path.split(filename)[-1].split('.')[0]
+            splited_filename = os.path.split(filename)[-1].split('.')
+            self.non_extension_part = splited_filename[0]
+            
+            # If there are more than 2 extensions, then the first one is the extra extension
+            if len(splited_filename) > 2:
+                self.extra_ext = splited_filename[1]
         except Exception as e:
             print(e.__str__())
             self.non_extension_part = 'NewFile'
@@ -33,6 +41,11 @@ class File:
         self.preview_data: DataFrame = None
 
         self.transform_method_button: dict = {}
+        
+    def _get_extra_ext(self):
+        if self.extra_ext:
+            return "." + self.extra_ext
+        return ""
 
     def save_data_to_file(self, output_data, destination_folder, params):
         output_filename = None
@@ -46,15 +59,15 @@ class File:
         try:
             if params.output_format == 'json':
                 output_filename = os.path.join(destination_folder, sub_dir,
-                                           self.non_extension_part + '_processed.json')
+                                           self.non_extension_part + '_processed' + self._get_extra_ext() + '.json')
                 params.output_filename = output_filename
                 self.save_json_file(output_data, params)
             
             if params.output_format == 'csv':
                 output_filename = os.path.join(destination_folder, sub_dir,
-                                           self.non_extension_part + '_processed.csv')
+                                           self.non_extension_part + '_processed' + self._get_extra_ext() + '.csv')
                 params.output_filename = output_filename
-                self.save_csv_file(output_data, params)
+                self.save_csv_file(output_data, params) 
 
         except Exception as e:
             message = f'Error while saving file to: {output_filename}. {e.__str__()}'
