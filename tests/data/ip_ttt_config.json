@@ -42,7 +42,10 @@
         }
     ],
     "pattern": [
-        "\\d{3,10}:<#>"
+        "\\d{3,10}:<#>",
+        "\\b\\w+TTT\\b:<TTTInTheEndOfWord>",
+        "\\b\\w+\\d+\\b:<DigitInTheEndOfWord>",
+        "^((\\\\\\\\)([^\\s,\\.\\\\]+)((\\\\)[^\\s,\\.\\\\]+)*(\\\\)?)$:<UNCPath>"
     ],
     "compress": false
 }
